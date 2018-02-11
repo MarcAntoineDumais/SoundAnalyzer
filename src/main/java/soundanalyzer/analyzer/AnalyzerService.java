@@ -14,8 +14,8 @@ public class AnalyzerService {
 	
 	private AudioInput audioInput;
 	
-	public AnalyzerService(AudioInput microphoneInput) {
-		this.audioInput = microphoneInput;
+	public AnalyzerService(AudioInput audioInput) {
+		this.audioInput = audioInput;
 	}
 	
 	public List<SinWave> fourierTransform(double[] samples) {
