@@ -21,6 +21,6 @@ public class SinWave {
 	
 	@Override
 	public String toString() {
-		return "F: " + frequency + ", A: " + amplitude;
+		return "F: " + frequency + ", A: " + amplitude + ", P: " + phase;
 	}
 }

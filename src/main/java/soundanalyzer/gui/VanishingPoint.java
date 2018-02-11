@@ -1,7 +1,7 @@
 package soundanalyzer.gui;
 
 import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.Graphics2D;
 
 public class VanishingPoint {
 	private int x, y, size;
@@ -27,13 +27,13 @@ public class VanishingPoint {
 		return life <= 0;
 	}
 	
-	public void draw(Graphics g) {
+	public void draw(Graphics2D g2d) {
 		if (isAlive()) {
-			Color c = g.getColor();
+			Color c = g2d.getColor();
 			int alpha = (int) (life / lifetime * 255);
-			g.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha));
-			g.fillOval(x - size / 2, y - size / 2, size, size);
-			g.setColor(c);
+			g2d.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha));
+			g2d.fillOval(x - size / 2, y - size / 2, size, size);
+			g2d.setColor(c);
 		}
 	}
 }

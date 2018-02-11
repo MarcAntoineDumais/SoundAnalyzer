@@ -32,7 +32,7 @@ public class MicrophoneInput {
 		DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 		try {
 			TargetDataLine line = (TargetDataLine)AudioSystem.getLine(info);
-			
+			line.close();
 			thread = new MicrophoneDataProcessor(line, listeners);
 			thread.start();
 		} catch (LineUnavailableException e) {

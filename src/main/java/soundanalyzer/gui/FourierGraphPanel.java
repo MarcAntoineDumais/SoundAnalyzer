@@ -86,6 +86,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 		}
 		
 		// Waves drawing
+		g2d.setColor(Color.CYAN);
 		synchronized(points) {
 			for (VanishingPoint p : points) {
 				p.draw(g2d);
@@ -96,7 +97,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 	
 	public void addWaves(List<SinWave> waves) {
 		waves.stream().forEach(wave -> {
-			if (wave.frequency <= maxFrequency) {
+			if (wave.frequency <= maxFrequency && wave.amplitude > 0.01) {
 				this.queue.add(wave.copy());
 			}
 		});
