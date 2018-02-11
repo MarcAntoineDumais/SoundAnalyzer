@@ -27,13 +27,16 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 	private final int pointDuration = 500;
 	
 	private int width, xStart, xEnd, xSize,
-				height, yStart, yEnd, ySize;	
+				height, yStart, yEnd, ySize,
+				maxFrequency, xStep;
 	
 	private Queue<SinWave> queue;
 	private List<VanishingPoint> points;
 	private Thread thread;
 	
 	public FourierGraphPanel() {
+		maxFrequency = 500;
+		xStep = maxFrequency / 10;
 		setOpaque(true);
 		setPreferredSize(new Dimension(400, 200));
 		
@@ -60,10 +63,10 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 		FontMetrics fm = g2d.getFontMetrics();
 		// X-axis
 		g2d.drawLine(xStart, yEnd, xEnd, yEnd);
-		for (int i = 1; i <= 8; i++) {
-			int x = xStart + (int)(i * xSize / 8.0);
+		for (double freq = xStep; freq <= maxFrequency; freq += xStep) {
+			int x = xStart + (int)(freq * xSize / maxFrequency);
 			g2d.drawLine(x, yEnd + 1, x, yEnd - 1);
-			String text = "" + i*1000;
+			String text = "" + (int)freq;
 			g2d.drawString(text,
 					x - fm.stringWidth(text) / 2,
 					height - 2);
@@ -92,7 +95,11 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 	}
 	
 	public void addWaves(List<SinWave> waves) {
-		waves.stream().forEach(wave -> this.queue.add(wave.copy()));
+		waves.stream().forEach(wave -> {
+			if (wave.frequency <= maxFrequency) {
+				this.queue.add(wave.copy());
+			}
+		});
 	}
 	
 	public void recalculatePositions() {
@@ -107,6 +114,12 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 		points.clear();
 	}
 
+	public void setMaxFrequency(int freq) {
+		maxFrequency = freq;
+		xStep = Math.max(25, (maxFrequency / 10) / 50 * 50);
+		points.clear();
+	}
+	
 	@Override
 	public void run() {
 		long t = System.currentTimeMillis();
@@ -127,7 +140,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 			for (int i = 0; i < newPoints; i++) {
 				SinWave wave = queue.poll();
 				points.add(new VanishingPoint(
-						xStart + (int)(wave.frequency * xSize / 8000.0),
+						xStart + (int)(wave.frequency * xSize / maxFrequency),
 						yEnd - (int)(wave.amplitude * ySize / 10),
 						pointSize, pointDuration));
 			}
