@@ -6,10 +6,17 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
+import soundanalyzer.audio.MicrophoneInput;
 import soundanalyzer.model.SinWave;
 
 @Service
 public class AnalyzerService {
+	
+	private MicrophoneInput microphoneInput;
+	
+	public AnalyzerService(MicrophoneInput microphoneInput) {
+		this.microphoneInput = microphoneInput;
+	}
 	
 	public List<SinWave> fourierTransform(double[] samples) {
 		int length = samples.length;
@@ -28,7 +35,7 @@ public class AnalyzerService {
 			if (real != 0) {
 				phase = Math.atan(imaginary / real);
 			}
-			results.add(new SinWave((i * 8000.0) / halfLength, magnitude, phase));
+			results.add(new SinWave((i * microphoneInput.getMaxFrequency()) / halfLength, magnitude, phase));
 		}
 		return results;
 	}

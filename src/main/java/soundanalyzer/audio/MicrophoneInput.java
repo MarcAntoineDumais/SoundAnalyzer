@@ -16,12 +16,19 @@ public class MicrophoneInput {
 	private List<MicrophoneListener> listeners;
 	private MicrophoneDataProcessor thread;
 	
+	private AudioFormat format;
+	private static final int SAMPLE_SIZE_IN_BITS = 16;
+	private static final int CHANNELS = 1;
+	private static final boolean SIGNED = true;
+	private static final boolean BIG_ENDIEN = true;
+	
 	public MicrophoneInput() {
 		listeners = new ArrayList<MicrophoneListener>();
+		format = new AudioFormat(16000, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
 	}
 	
 	public void start() {
-		AudioFormat format = new AudioFormat(16000, 16, 1, true, true);
+		stop();
 		DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 		try {
 			TargetDataLine line = (TargetDataLine)AudioSystem.getLine(info);
@@ -30,6 +37,7 @@ public class MicrophoneInput {
 			thread.start();
 		} catch (LineUnavailableException e) {
 			System.err.println("Could not initialize microphone input");
+			stop();
 			e.printStackTrace();
 		}
 	}
@@ -37,6 +45,18 @@ public class MicrophoneInput {
 	public void stop() {
 		if (thread != null) {
 			thread.stopProcessing();
+			while (!thread.closed);
+		}
+	}
+	
+	public double getMaxFrequency() {
+		return format.getSampleRate() / 2.0;
+	}
+	
+	public void setMaxFrequency(int maxFrequency) {
+		format = new AudioFormat(maxFrequency * 2f, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
+		if (thread != null && !thread.isStopped()) {
+			start();
 		}
 	}
 	
@@ -52,12 +72,14 @@ public class MicrophoneInput {
 	
 	private class MicrophoneDataProcessor extends Thread {
 		private boolean stopped;
+		private boolean closed;
 		private TargetDataLine line;
 		private List<MicrophoneListener> listeners;
 		
 		public MicrophoneDataProcessor(TargetDataLine line, List<MicrophoneListener> listeners) {
 			this.line = line;
 			this.listeners = listeners;
+			this.closed = false;
 		}
 		
 		@Override
@@ -67,6 +89,7 @@ public class MicrophoneInput {
 			try {
 				line.open();
 				line.start();
+				listeners.stream().forEach(listener -> listener.lineOpened());
 				int bytesRead;
 				byte[] data = new byte[line.getBufferSize() / 5];
 				long temp;
@@ -88,13 +111,22 @@ public class MicrophoneInput {
 				System.err.println("Could not initialize microphone input");
 				e.printStackTrace();
 			} finally {
-				line.close();
 				listeners.stream().forEach(listener -> listener.lineClosed());
+				closed = true;
 			}			
 		}
 		
 		public void stopProcessing() {
 			this.stopped = true;
+			line.close();
+		}
+		
+		public boolean isStopped() {
+			return stopped;
+		}
+		
+		public boolean isClosed() {
+			return closed;
 		}
 	}
 }

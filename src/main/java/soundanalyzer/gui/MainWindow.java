@@ -39,9 +39,13 @@ public class MainWindow extends JFrame {
 		mntmStartRecording = new JMenuItem("Start Recording");
 		mntmStartRecording.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				microphoneInput.start();
-				mntmStartRecording.setEnabled(false);
-				mntmStopRecording.setEnabled(true);
+				new Thread() {
+					@Override
+					public void run() {
+						microphoneInput.start();
+					}
+				}.start();
+				microphoneLineOpened();
 			}
 		});
 		mnMicrophone.add(mntmStartRecording);
@@ -49,9 +53,13 @@ public class MainWindow extends JFrame {
 		mntmStopRecording = new JMenuItem("Stop Recording");
 		mntmStopRecording.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				microphoneInput.stop();
-				mntmStartRecording.setEnabled(true);
-				mntmStopRecording.setEnabled(false);
+				new Thread() {
+					@Override
+					public void run() {
+						microphoneInput.stop();
+					}
+				}.start();
+				microphoneLineClosed();
 			}
 		});
 		mntmStopRecording.setEnabled(false);
@@ -61,7 +69,7 @@ public class MainWindow extends JFrame {
 		contentPane.setBorder(new EmptyBorder(0, 0, 0, 0));
 		contentPane.setLayout(new BorderLayout(0, 0));
 		
-		mainPanel = new MainPanel();
+		mainPanel = new MainPanel(this);
 		microphoneInput.subscribe(mainPanel);
 		contentPane.add(mainPanel, BorderLayout.CENTER);
 		setContentPane(contentPane);
@@ -75,5 +83,10 @@ public class MainWindow extends JFrame {
 	public void microphoneLineClosed() {
 		mntmStartRecording.setEnabled(true);
 		mntmStopRecording.setEnabled(false);
+	}
+	
+	public void microphoneLineOpened() {
+		mntmStartRecording.setEnabled(false);
+		mntmStopRecording.setEnabled(true);
 	}
 }
