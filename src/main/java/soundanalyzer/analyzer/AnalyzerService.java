@@ -6,15 +6,15 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
-import soundanalyzer.audio.MicrophoneInput;
+import soundanalyzer.audio.AudioInput;
 import soundanalyzer.model.SinWave;
 
 @Service
 public class AnalyzerService {
 	
-	private MicrophoneInput microphoneInput;
+	private AudioInput microphoneInput;
 	
-	public AnalyzerService(MicrophoneInput microphoneInput) {
+	public AnalyzerService(AudioInput microphoneInput) {
 		this.microphoneInput = microphoneInput;
 	}
 	

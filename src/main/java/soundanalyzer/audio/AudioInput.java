@@ -7,14 +7,21 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 import org.springframework.stereotype.Service;
 
 @Service
-public class MicrophoneInput {
-	private List<MicrophoneListener> listeners;
-	private MicrophoneDataProcessor thread;
+public class AudioInput {
+	private List<AudioListener> listeners;
+	private AudioDataProcessor thread;
+	private Mixer.Info mixerInfo;
 	
 	private AudioFormat format;
 	private static final int SAMPLE_SIZE_IN_BITS = 16;
@@ -22,8 +29,8 @@ public class MicrophoneInput {
 	private static final boolean SIGNED = true;
 	private static final boolean BIG_ENDIEN = true;
 	
-	public MicrophoneInput() {
-		listeners = new ArrayList<MicrophoneListener>();
+	public AudioInput() {
+		listeners = new ArrayList<AudioListener>();
 		format = new AudioFormat(16000, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
 	}
 	
@@ -31,10 +38,19 @@ public class MicrophoneInput {
 		stop();
 		DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 		try {
-			TargetDataLine line = (TargetDataLine)AudioSystem.getLine(info);
-			line.close();
-			thread = new MicrophoneDataProcessor(line, listeners);
-			thread.start();
+			TargetDataLine line;
+			if (mixerInfo == null) {
+				line = (TargetDataLine)AudioSystem.getLine(info);
+				line.close();
+				thread = new AudioDataProcessor(line, listeners);
+				thread.start();
+			} else {
+				Mixer mixer = AudioSystem.getMixer(mixerInfo);
+				line = (TargetDataLine)mixer.getLine(info);
+				line.close();
+				thread = new AudioDataProcessor(line, listeners);
+				thread.start();
+			}			
 		} catch (LineUnavailableException e) {
 			System.err.println("Could not initialize microphone input");
 			stop();
@@ -60,23 +76,27 @@ public class MicrophoneInput {
 		}
 	}
 	
-	public void subscribe(MicrophoneListener listener) {
+	public void setMixerInfo(Mixer.Info mixerInfo) {
+		this.mixerInfo = mixerInfo;
+	}
+	
+	public void subscribe(AudioListener listener) {
 		if (!listeners.contains(listener)) {
 			listeners.add(listener);
 		}
 	}
 	
-	public void unsubscribe(MicrophoneListener listener) {
+	public void unsubscribe(AudioListener listener) {
 		listeners.remove(listener);
 	}
 	
-	private class MicrophoneDataProcessor extends Thread {
+	private class AudioDataProcessor extends Thread {
 		private boolean stopped;
 		private boolean closed;
 		private TargetDataLine line;
-		private List<MicrophoneListener> listeners;
+		private List<AudioListener> listeners;
 		
-		public MicrophoneDataProcessor(TargetDataLine line, List<MicrophoneListener> listeners) {
+		public AudioDataProcessor(TargetDataLine line, List<AudioListener> listeners) {
 			this.line = line;
 			this.listeners = listeners;
 			this.closed = false;
