@@ -12,10 +12,10 @@ import soundanalyzer.model.SinWave;
 @Service
 public class AnalyzerService {
 	
-	private AudioInput microphoneInput;
+	private AudioInput audioInput;
 	
 	public AnalyzerService(AudioInput microphoneInput) {
-		this.microphoneInput = microphoneInput;
+		this.audioInput = microphoneInput;
 	}
 	
 	public List<SinWave> fourierTransform(double[] samples) {
@@ -35,7 +35,7 @@ public class AnalyzerService {
 			if (real != 0) {
 				phase = Math.atan(imaginary / real);
 			}
-			results.add(new SinWave((i * microphoneInput.getMaxFrequency()) / halfLength, magnitude, phase));
+			results.add(new SinWave((i * audioInput.getMaxFrequency()) / halfLength, magnitude, phase));
 		}
 		return results;
 	}
