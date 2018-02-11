@@ -4,8 +4,8 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import soundanalyzer.analyzer.AnalyzerService;
-import soundanalyzer.audio.MicrophoneInput;
-import soundanalyzer.audio.MicrophoneListener;
+import soundanalyzer.audio.AudioInput;
+import soundanalyzer.audio.AudioListener;
 import soundanalyzer.config.ApplicationContextProvider;
 import java.awt.BorderLayout;
 import javax.swing.JLabel;
@@ -17,19 +17,19 @@ import java.awt.Dimension;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 
-public class MainPanel extends JPanel implements MicrophoneListener{
+public class MainPanel extends JPanel implements AudioListener{
 	private static final long serialVersionUID = 2949687444255909471L;
 	
 	private MainWindow mainWindow;
 	
 	private AnalyzerService analyzerService;
-	private MicrophoneInput microphoneInput;
+	private AudioInput audioInput;
 	private FourierGraphPanel fourierGraphPanel;
 	
 	public MainPanel(MainWindow mainWindow) {
 		this.mainWindow = mainWindow;
 		analyzerService = ApplicationContextProvider.getApplicationContext().getBean(AnalyzerService.class);
-		microphoneInput = ApplicationContextProvider.getApplicationContext().getBean(MicrophoneInput.class);
+		audioInput = ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class);
 		
 		setBorder(new EmptyBorder(0, 0, 0, 0));
 		setLayout(new BorderLayout(0, 0));
@@ -59,7 +59,7 @@ public class MainPanel extends JPanel implements MicrophoneListener{
 					new Thread() {
 						@Override
 						public void run() {
-							microphoneInput.setMaxFrequency(slider.getValue());
+							audioInput.setMaxFrequency(slider.getValue());
 							fourierGraphPanel.setMaxFrequency(slider.getValue());
 						}
 					}.start();
