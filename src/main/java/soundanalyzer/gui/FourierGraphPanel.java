@@ -29,19 +29,21 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 	private int width, xStart, xEnd, xSize,
 				height, yStart, yEnd, ySize,
 				maxFrequency, xStep;
+	private double amplitude;
 	
 	private Queue<SinWave> queue;
-	private List<VanishingPoint> points;
+	private List<VanishingGraphValue> points;
 	private Thread thread;
 	
 	public FourierGraphPanel() {
 		maxFrequency = 500;
 		xStep = maxFrequency / 10;
+		amplitude = 1.0;
 		setOpaque(true);
 		setPreferredSize(new Dimension(400, 200));
 		
 		queue = new ConcurrentLinkedQueue<SinWave>();
-		points = Collections.synchronizedList(new ArrayList<VanishingPoint>());
+		points = Collections.synchronizedList(new ArrayList<VanishingGraphValue>());
 		recalculatePositions();
 		
 		thread = new Thread(this);
@@ -73,22 +75,24 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 		}
 		
 		// Y-axis
-		g2d.drawLine(xStart, yEnd, xStart, yStart);
-		for (int i = 1; i <= 10; i++) {
-			int y = yEnd - (int)(i * ySize / 10.0);
-			g2d.drawLine(xStart - 1, y, xStart + 1, y);
-			/*
-			String text = "" + i;
-			g2d.drawString(text,
-					xStart - 5 - fm.stringWidth(text),
-					y + fm.getHeight() / 2 - 4);
-			*/
-		}
+		
+//		g2d.drawLine(xStart, yEnd, xStart, yStart);
+//		for (int i = 1; i <= 10; i++) {
+//			int y = yEnd - (int)(i * ySize / 10.0);
+//			g2d.drawLine(xStart - 1, y, xStart + 1, y);
+//			
+//			String text = "" + i;
+//			g2d.drawString(text,
+//					xStart - 5 - fm.stringWidth(text),
+//					y + fm.getHeight() / 2 - 4);
+//			
+//		}
+	
 		
 		// Waves drawing
 		g2d.setColor(Color.CYAN);
 		synchronized(points) {
-			for (VanishingPoint p : points) {
+			for (VanishingGraphValue p : points) {
 				p.draw(g2d);
 			}
 		}
@@ -121,6 +125,11 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 		points.clear();
 	}
 	
+	public void setAmplitude(double amplitude) {
+		this.amplitude = amplitude;
+		points.clear();
+	}
+	
 	@Override
 	public void run() {
 		long t = System.currentTimeMillis();
@@ -131,19 +140,19 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 			t = newT;
 			
 			synchronized(points) {
-				for (VanishingPoint p : points) {
+				for (VanishingGraphValue p : points) {
 					p.update(elapsed);
 				}
 				
-				points.removeIf(VanishingPoint::isDead);
+				points.removeIf(VanishingGraphValue::isDead);
 			}
 			int newPoints = queue.size();
 			for (int i = 0; i < newPoints; i++) {
 				SinWave wave = queue.poll();
-				points.add(new VanishingPoint(
+				points.add(new VanishingGraphValue(
 						xStart + (int)(wave.frequency * xSize / maxFrequency),
-						yEnd - (int)(wave.amplitude * ySize / 10),
-						pointSize, pointDuration));
+						yEnd - (int)(wave.amplitude * this.amplitude * ySize / 10),
+						yEnd, pointSize, pointDuration));
 			}
 			
 			repaint();

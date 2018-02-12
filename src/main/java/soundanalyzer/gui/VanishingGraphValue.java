@@ -1,15 +1,19 @@
 package soundanalyzer.gui;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Stroke;
 
-public class VanishingPoint {
+public class VanishingGraphValue {
 	private int x, y, size;
+	private int yEnd;
 	private double lifetime, life;
 	
-	public VanishingPoint(int x, int y, int size, double lifetime) {
+	public VanishingGraphValue(int x, int y, int yEnd, int size, double lifetime) {
 		this.x = x;
 		this.y = y;
+		this.yEnd = yEnd;
 		this.size = size;
 		this.lifetime = lifetime;
 		this.life = lifetime;
@@ -30,10 +34,15 @@ public class VanishingPoint {
 	public void draw(Graphics2D g2d) {
 		if (isAlive()) {
 			Color c = g2d.getColor();
+			Stroke s = g2d.getStroke();
 			int alpha = (int) (life / lifetime * 255);
 			g2d.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha));
-			g2d.fillOval(x - size / 2, y - size / 2, size, size);
+			g2d.setStroke(new BasicStroke(size, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			g2d.drawLine(x, y, x, yEnd);
+			//g2d.fillRect(x - size / 2, yEnd, size, y - yEnd);
+			//g2d.fillOval(x - size / 2, y - size / 2, size, size);
 			g2d.setColor(c);
+			g2d.setStroke(s);
 		}
 	}
 }
