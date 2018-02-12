@@ -1,7 +1,11 @@
-#eclipse
+#Eclipse
 .classpath
 .project
 .settings/
+
+#IntelliJ
+.idea/
+sound-analyzer.iml
 
 #other
 target/

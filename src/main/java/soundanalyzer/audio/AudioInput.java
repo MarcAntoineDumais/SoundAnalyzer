@@ -16,6 +16,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import org.springframework.stereotype.Service;
+import soundanalyzer.model.RawPoint;
 
 @Service
 public class AudioInput {
@@ -111,18 +112,18 @@ public class AudioInput {
 				line.start();
 				listeners.stream().forEach(listener -> listener.lineOpened());
 				int bytesRead;
-				byte[] data = new byte[line.getBufferSize() / 5];
+				byte[] data = new byte[Math.max(1, line.getBufferSize() / 10)];
 				long temp;
 				double sample;
 				while (!stopped) {
 					bytesRead = line.read(data, 0, data.length);
-					double[] samples = new double[bytesRead/2];
+					RawPoint[] samples = new RawPoint[bytesRead/2];
 					for (int i = 0; i < bytesRead/2; i++) {
 						temp = ((data[2*i] & 0xffL) << 8L) |
 								(data[2*i + 1] & 0xffL);
 						sample = (temp << 48) >> 48;
 						sample = sample / Math.pow(2, 15);
-						samples[i] = sample;
+						samples[i] = new RawPoint(sample);
 					}
 					
 					listeners.stream().forEach(listener -> listener.readData(samples));

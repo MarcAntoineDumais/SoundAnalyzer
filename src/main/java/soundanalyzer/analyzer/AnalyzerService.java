@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 import soundanalyzer.audio.AudioInput;
+import soundanalyzer.model.RawPoint;
 import soundanalyzer.model.SinWave;
 
 @Service
@@ -18,12 +19,14 @@ public class AnalyzerService {
 		this.audioInput = audioInput;
 	}
 	
-	public List<SinWave> fourierTransform(double[] samples) {
+	public List<SinWave> fourierTransform(RawPoint[] samples) {
 		int length = samples.length;
 		int halfLength = length / 2;
 		DoubleFFT_1D fft = new DoubleFFT_1D(length);
 		double[] processed = new double[length*2];
-		System.arraycopy(samples, 0, processed, 0, length);
+		for (int i = 0; i < samples.length; i++) {
+		    processed[i] = samples[i].value;
+        }
 		fft.complexForward(processed);
 		
 		ArrayList<SinWave> results = new ArrayList<SinWave>();

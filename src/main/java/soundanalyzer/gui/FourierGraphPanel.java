@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.swing.JPanel;
+import javax.swing.*;
 
 import soundanalyzer.model.SinWave;
 
@@ -24,7 +24,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 
 	private final int desiredFPS = 30;
 	private final int pointSize = 4;
-	private final int pointDuration = 500;
+	private final int pointDuration = 400;
 	
 	private int width, xStart, xEnd, xSize,
 				height, yStart, yEnd, ySize,
@@ -42,7 +42,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 		setOpaque(true);
 		setPreferredSize(new Dimension(400, 200));
 		
-		queue = new ConcurrentLinkedQueue<SinWave>();
+		queue = new ConcurrentLinkedQueue<>();
 		points = Collections.synchronizedList(new ArrayList<VanishingGraphValue>());
 		recalculatePositions();
 		
@@ -89,7 +89,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 //		}
 	
 		
-		// Waves drawing
+		// Points drawing
 		g2d.setColor(Color.CYAN);
 		synchronized(points) {
 			for (VanishingGraphValue p : points) {
@@ -155,8 +155,8 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 						yEnd - (int)(amp * ySize),
 						yEnd, pointSize, pointDuration));
 			}
-			
-			repaint();
+
+			SwingUtilities.invokeLater(() -> repaint());
 			
 			try {
 				Thread.sleep(Math.max(sleepTime - elapsed, 0));
