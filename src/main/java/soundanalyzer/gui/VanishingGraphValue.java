@@ -39,8 +39,6 @@ public class VanishingGraphValue {
 			g2d.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha));
 			g2d.setStroke(new BasicStroke(size, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 			g2d.drawLine(x, y, x, yEnd);
-			//g2d.fillRect(x - size / 2, yEnd, size, y - yEnd);
-			//g2d.fillOval(x - size / 2, y - size / 2, size, size);
 			g2d.setColor(c);
 			g2d.setStroke(s);
 		}

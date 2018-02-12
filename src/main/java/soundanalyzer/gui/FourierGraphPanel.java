@@ -149,9 +149,10 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 			int newPoints = queue.size();
 			for (int i = 0; i < newPoints; i++) {
 				SinWave wave = queue.poll();
+				double amp = Math.sqrt(wave.amplitude * this.amplitude);
 				points.add(new VanishingGraphValue(
 						xStart + (int)(wave.frequency * xSize / maxFrequency),
-						yEnd - (int)(wave.amplitude * this.amplitude * ySize / 10),
+						yEnd - (int)(amp * ySize),
 						yEnd, pointSize, pointDuration));
 			}
 			
