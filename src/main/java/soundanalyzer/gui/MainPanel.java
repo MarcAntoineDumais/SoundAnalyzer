@@ -48,33 +48,63 @@ public class MainPanel extends JPanel implements AudioListener{
 		settingsPanel.add(frequencySettingsPanel);
 		frequencySettingsPanel.setLayout(new BoxLayout(frequencySettingsPanel, BoxLayout.Y_AXIS));
 		
-		JLabel lblMaxFrequency = new JLabel("Max Frequency");
+		JLabel lblMaxFrequency = new JLabel("Max Frequency (Hz)");
 		lblMaxFrequency.setAlignmentX(Component.CENTER_ALIGNMENT);
 		frequencySettingsPanel.add(lblMaxFrequency);
 
-		JSlider slider = new JSlider();
-		slider.addChangeListener(new ChangeListener() {
+		JSlider frequencySlider = new JSlider();
+		frequencySlider.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
-				if (!slider.getValueIsAdjusting()) {
+				if (!frequencySlider.getValueIsAdjusting()) {
 					new Thread() {
 						@Override
 						public void run() {
-							audioInput.setMaxFrequency(slider.getValue());
-							fourierGraphPanel.setMaxFrequency(slider.getValue());
+							int value = Math.max(50, frequencySlider.getValue());
+							audioInput.setMaxFrequency(value);
+							fourierGraphPanel.setMaxFrequency(value);
 						}
 					}.start();
 				}
 			}
 		});
-		slider.setMinorTickSpacing(50);
-		slider.setPaintLabels(true);
-		slider.setMajorTickSpacing(500);
-		slider.setSnapToTicks(true);
-		slider.setMinimum(50);
-		slider.setMaximum(8000);
-		slider.setValue(8000);
-		slider.setOrientation(SwingConstants.VERTICAL);
-		frequencySettingsPanel.add(slider);
+		frequencySlider.setMinorTickSpacing(50);
+		frequencySlider.setPaintLabels(true);
+		frequencySlider.setMajorTickSpacing(1000);
+		frequencySlider.setSnapToTicks(true);
+		frequencySlider.setMinimum(0);
+		frequencySlider.setMaximum(8000);
+		frequencySlider.setValue(8000);
+		frequencySlider.setOrientation(SwingConstants.VERTICAL);
+		frequencySettingsPanel.add(frequencySlider);
+		
+		JPanel spacerPanel2 = new JPanel();
+		spacerPanel2.setPreferredSize(new Dimension(10, spacerPanel2.getHeight()));
+		settingsPanel.add(spacerPanel2);
+		
+		JPanel amplitudeSettingsPanel = new JPanel();
+		settingsPanel.add(amplitudeSettingsPanel);
+		amplitudeSettingsPanel.setLayout(new BoxLayout(amplitudeSettingsPanel, BoxLayout.Y_AXIS));
+		
+		JLabel lblMaxAmplitude = new JLabel("Amplitude (%)");
+		lblMaxAmplitude.setAlignmentX(Component.CENTER_ALIGNMENT);
+		amplitudeSettingsPanel.add(lblMaxAmplitude);
+
+		JSlider amplitudeSlider = new JSlider();
+		amplitudeSlider.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				double amplitude = Math.pow(10, (amplitudeSlider.getValue() / 100.0 - 0.5) * 4.0);
+				fourierGraphPanel.setAmplitude(amplitude);
+			}
+		});
+		amplitudeSlider.setMinorTickSpacing(1);
+		amplitudeSlider.setPaintLabels(true);
+		amplitudeSlider.setMajorTickSpacing(10);
+		amplitudeSlider.setSnapToTicks(true);
+		amplitudeSlider.setMinimum(0);
+		amplitudeSlider.setMaximum(100);
+		amplitudeSlider.setValue(50);
+		amplitudeSlider.setOrientation(SwingConstants.VERTICAL);
+		amplitudeSettingsPanel.add(amplitudeSlider);
 	}
 
 	public void recalculatePositions() {
