@@ -58,7 +58,6 @@ public class RawGraphPanel extends JPanel implements Runnable {
 				p.draw(g2d);
 			}
 		}
-		
 	}
 	
 	public void addPoints(List<RawPoint> points) {
@@ -95,7 +94,7 @@ public class RawGraphPanel extends JPanel implements Runnable {
                 RawPoint p = queue.poll();
                 p.value *= amplitude;
 
-                System.out.println(width + "," + t + ", " + p.time + ", " + speed);
+                //System.out.println(width + "," + t + ", " + p.time + ", " + speed);
                 points.add(new MovingGraphValue(
                         width - ((t - p.time) * speed),
                         height/2 - (int)(p.value * height/2.0),

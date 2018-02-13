@@ -7,7 +7,6 @@ public class MovingGraphValue {
 	private int yStart, yEnd, size;
 
 	public MovingGraphValue(double x, int yStart, int yEnd, int size) {
-	    System.out.println(x);
 		this.x = x;
 		this.yStart = yStart;
 		this.yEnd = yEnd;

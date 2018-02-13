@@ -96,7 +96,6 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 				p.draw(g2d);
 			}
 		}
-		
 	}
 	
 	public void addWaves(List<SinWave> waves) {

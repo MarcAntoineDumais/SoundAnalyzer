@@ -108,24 +108,27 @@ public class AudioInput {
 			stopped = false;
 			
 			try {
-				line.open();
+				line.open(format, 800);
 				line.start();
 				listeners.stream().forEach(listener -> listener.lineOpened());
 				int bytesRead;
-				byte[] data = new byte[Math.max(1, line.getBufferSize() / 10)];
-				long temp;
+				byte[] data = new byte[line.getBufferSize()];
+				long temp, t, elapsed;
 				double sample;
+				long lastTime = System.currentTimeMillis();
 				while (!stopped) {
 					bytesRead = line.read(data, 0, data.length);
+					t = System.currentTimeMillis();
+					elapsed = lastTime - t;
+					lastTime = t;
 					RawPoint[] samples = new RawPoint[bytesRead/2];
 					for (int i = 0; i < bytesRead/2; i++) {
 						temp = ((data[2*i] & 0xffL) << 8L) |
 								(data[2*i + 1] & 0xffL);
 						sample = (temp << 48) >> 48;
 						sample = sample / Math.pow(2, 15);
-						samples[i] = new RawPoint(sample);
+						samples[i] = new RawPoint(sample, lastTime + (bytesRead/2 - i - 1) * elapsed / (bytesRead/2.0));
 					}
-					
 					listeners.stream().forEach(listener -> listener.readData(samples));
 				}
 			} catch (LineUnavailableException e) {

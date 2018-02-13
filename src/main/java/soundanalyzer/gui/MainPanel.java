@@ -43,6 +43,7 @@ public class MainPanel extends JPanel implements AudioListener{
         add(rawPanel);
 
         rawGraphPanel = new RawGraphPanel();
+        rawGraphPanel.setMaximumSize(new Dimension(400, 200));
         rawPanel.add(rawGraphPanel);
 
         JPanel spacerPanel = new JPanel();
@@ -75,7 +76,7 @@ public class MainPanel extends JPanel implements AudioListener{
 
         JPanel spacerPanel2 = new JPanel();
         spacerPanel2.setPreferredSize(new Dimension(10, spacerPanel2.getHeight()));
-        speedSettingsPanel.add(spacerPanel2);
+        rawPanel.add(spacerPanel2);
 
         JPanel rawAmplitudeSettingsPanel = new JPanel();
         rawPanel.add(rawAmplitudeSettingsPanel);
@@ -101,12 +102,17 @@ public class MainPanel extends JPanel implements AudioListener{
         rawAmplitudeSlider.setValue(50);
         rawAmplitudeSlider.setOrientation(SwingConstants.VERTICAL);
         rawAmplitudeSettingsPanel.add(rawAmplitudeSlider);
+		
+		JPanel verticalSpacerPanel = new JPanel();
+		verticalSpacerPanel.setPreferredSize(new Dimension(verticalSpacerPanel.getWidth(), 10));
+		add(verticalSpacerPanel);
 
 		JPanel fourierPanel = new JPanel();
 		fourierPanel.setLayout(new BoxLayout(fourierPanel, BoxLayout.X_AXIS));
 		add(fourierPanel);
 
 		fourierGraphPanel = new FourierGraphPanel();
+		fourierGraphPanel.setMaximumSize(new Dimension(400, 200));
 		fourierPanel.add(fourierGraphPanel);
 		
 		JPanel spacerPanel3 = new JPanel();
@@ -124,23 +130,15 @@ public class MainPanel extends JPanel implements AudioListener{
 		JSlider frequencySlider = new JSlider();
 		frequencySlider.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
-				if (!frequencySlider.getValueIsAdjusting()) {
-					new Thread() {
-						@Override
-						public void run() {
-							int value = Math.max(50, frequencySlider.getValue());
-							audioInput.setMaxFrequency(value);
-							fourierGraphPanel.setMaxFrequency(value);
-						}
-					}.start();
-				}
+				int value = Math.max(50, frequencySlider.getValue());
+				fourierGraphPanel.setMaxFrequency(value);
 			}
 		});
 		frequencySlider.setMinorTickSpacing(50);
 		frequencySlider.setPaintLabels(true);
 		frequencySlider.setMajorTickSpacing(1000);
 		frequencySlider.setSnapToTicks(true);
-		frequencySlider.setMinimum(0);
+		frequencySlider.setMinimum(1000);
 		frequencySlider.setMaximum(8000);
 		frequencySlider.setValue(8000);
 		frequencySlider.setOrientation(SwingConstants.VERTICAL);
@@ -158,22 +156,22 @@ public class MainPanel extends JPanel implements AudioListener{
 		lblMaxAmplitude.setAlignmentX(Component.CENTER_ALIGNMENT);
 		amplitudeSettingsPanel.add(lblMaxAmplitude);
 
-		JSlider amplitudeSlider = new JSlider();
-		amplitudeSlider.addChangeListener(new ChangeListener() {
+		JSlider fourierAmplitudeSlider = new JSlider();
+		fourierAmplitudeSlider.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
-				double amplitude = Math.pow(10, (amplitudeSlider.getValue() / 100.0 - 0.5) * 4.0);
+				double amplitude = Math.pow(10, (fourierAmplitudeSlider.getValue() / 100.0 - 0.5) * 4.0);
 				fourierGraphPanel.setAmplitude(amplitude);
 			}
 		});
-		amplitudeSlider.setMinorTickSpacing(1);
-		amplitudeSlider.setPaintLabels(true);
-		amplitudeSlider.setMajorTickSpacing(10);
-		amplitudeSlider.setSnapToTicks(true);
-		amplitudeSlider.setMinimum(0);
-		amplitudeSlider.setMaximum(100);
-		amplitudeSlider.setValue(50);
-		amplitudeSlider.setOrientation(SwingConstants.VERTICAL);
-		amplitudeSettingsPanel.add(amplitudeSlider);
+		fourierAmplitudeSlider.setMinorTickSpacing(1);
+		fourierAmplitudeSlider.setPaintLabels(true);
+		fourierAmplitudeSlider.setMajorTickSpacing(10);
+		fourierAmplitudeSlider.setSnapToTicks(true);
+		fourierAmplitudeSlider.setMinimum(0);
+		fourierAmplitudeSlider.setMaximum(100);
+		fourierAmplitudeSlider.setValue(50);
+		fourierAmplitudeSlider.setOrientation(SwingConstants.VERTICAL);
+		amplitudeSettingsPanel.add(fourierAmplitudeSlider);
 	}
 
 	public void recalculatePositions() {
