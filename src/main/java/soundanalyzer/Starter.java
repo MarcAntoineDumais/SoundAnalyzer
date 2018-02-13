@@ -9,14 +9,14 @@ import soundanalyzer.gui.MainWindow;
 
 @SpringBootApplication
 public class Starter {
-	
-	public static void main(String[] args) {
-		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(Starter.class)
+
+    public static void main(String[] args) {
+        ConfigurableApplicationContext ctx = new SpringApplicationBuilder(Starter.class)
                 .headless(false).run(args);
 
-		EventQueue.invokeLater(() -> {
-           MainWindow window = new MainWindow();
-           window.setVisible(true);
+        EventQueue.invokeLater(() -> {
+            MainWindow window = new MainWindow();
+            window.setVisible(true);
         });
-	}
+    }
 }
