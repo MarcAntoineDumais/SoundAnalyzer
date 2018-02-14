@@ -94,11 +94,9 @@ public class RawGraphPanel extends JPanel implements Runnable {
                 RawPoint p = queue.poll();
                 p.value *= amplitude;
 
-                //System.out.println(width + "," + t + ", " + p.time + ", " + speed);
                 points.add(new MovingGraphValue(
                         width - ((t - p.time) * speed),
                         height/2 - (int)(p.value * height/2.0),
-                        height/2 + (int)(p.value * height/2.0),
                         pointSize));
             }
 

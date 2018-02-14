@@ -4,12 +4,11 @@ import java.awt.*;
 
 public class MovingGraphValue {
     private double x;
-    private int yStart, yEnd, size;
+    private int y, size;
 
-    public MovingGraphValue(double x, int yStart, int yEnd, int size) {
+    public MovingGraphValue(double x, int y, int size) {
         this.x = x;
-        this.yStart = yStart;
-        this.yEnd = yEnd;
+        this.y = y;
         this.size = size;
     }
 
@@ -27,10 +26,10 @@ public class MovingGraphValue {
 
     public void draw(Graphics2D g2d) {
         if (isAlive()) {
-            Stroke s = g2d.getStroke();
-            g2d.setStroke(new BasicStroke(size, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g2d.drawLine((int)x, yStart, (int)x, yEnd);
-            g2d.setStroke(s);
+            //Stroke s = g2d.getStroke();
+            //g2d.setStroke(new BasicStroke(size, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2d.fillOval((int)x - size/2, y - size/2, size, size);
+            //g2d.setStroke(s);
         }
     }
 }

@@ -23,11 +23,11 @@ public class AnalyzerService {
         int length = samples.length;
         int halfLength = length / 2;
         DoubleFFT_1D fft = new DoubleFFT_1D(length);
-        double[] processed = new double[length*2];
+        double[] processed = new double[length];
         for (int i = 0; i < samples.length; i++) {
             processed[i] = samples[i].value;
         }
-        fft.complexForward(processed);
+        fft.realForward(processed);
 
         ArrayList<SinWave> results = new ArrayList<SinWave>();
         for (int i = 1; i < halfLength; i++) {

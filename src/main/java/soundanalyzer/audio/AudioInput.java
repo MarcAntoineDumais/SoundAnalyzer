@@ -108,7 +108,7 @@ public class AudioInput {
             stopped = false;
 
             try {
-                line.open(format, 800);
+                line.open(format, 1024);
                 line.start();
                 listeners.stream().forEach(listener -> listener.lineOpened());
                 int bytesRead;
