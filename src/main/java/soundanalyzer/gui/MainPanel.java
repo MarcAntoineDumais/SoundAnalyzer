@@ -43,6 +43,7 @@ public class MainPanel extends JPanel implements AudioListener{
         add(rawPanel);
 
         rawGraphPanel = new RawGraphPanel();
+        rawGraphPanel.setMinimumSize(new Dimension(400, 200));
         rawGraphPanel.setMaximumSize(new Dimension(400, 200));
         rawPanel.add(rawGraphPanel);
 
@@ -112,6 +113,7 @@ public class MainPanel extends JPanel implements AudioListener{
         add(fourierPanel);
 
         fourierGraphPanel = new FourierGraphPanel();
+        fourierGraphPanel.setMinimumSize(new Dimension(400, 200));
         fourierGraphPanel.setMaximumSize(new Dimension(400, 200));
         fourierPanel.add(fourierGraphPanel);
 
@@ -181,7 +183,7 @@ public class MainPanel extends JPanel implements AudioListener{
     public void readData(RawPoint[] data) {
         if (data.length > 0) {
             rawGraphPanel.addPoints(Arrays.asList(data));
-            fourierGraphPanel.addWaves(analyzerService.fourierTransform(data));
+            fourierGraphPanel.addWaves(analyzerService.fourierTransform(data, false));
         }
     }
 
