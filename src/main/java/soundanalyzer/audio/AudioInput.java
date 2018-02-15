@@ -9,29 +9,30 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import soundanalyzer.model.RawPoint;
 
 @Service
 public class AudioInput {
-    private List<AudioListener> listeners;
+    private List<AudioConnectionListener> connectionListeners;
+    private List<AudioDataListener> dataListeners;
     private AudioDataProcessor thread;
     private Mixer.Info mixerInfo;
 
     private AudioFormat format;
+    @Autowired
+    private AudioOutput audioOutput;
+    
     private static final int SAMPLE_SIZE_IN_BITS = 16;
     private static final int CHANNELS = 1;
     private static final boolean SIGNED = true;
     private static final boolean BIG_ENDIEN = true;
 
     public AudioInput() {
-        listeners = new ArrayList<AudioListener>();
+        connectionListeners = new ArrayList<AudioConnectionListener>();
+        dataListeners = new ArrayList<AudioDataListener>();
         format = new AudioFormat(16000, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
     }
 
@@ -43,17 +44,17 @@ public class AudioInput {
             if (mixerInfo == null) {
                 line = (TargetDataLine)AudioSystem.getLine(info);
                 line.close();
-                thread = new AudioDataProcessor(line, listeners);
+                thread = new AudioDataProcessor(line, connectionListeners, dataListeners);
                 thread.start();
             } else {
                 Mixer mixer = AudioSystem.getMixer(mixerInfo);
                 line = (TargetDataLine)mixer.getLine(info);
                 line.close();
-                thread = new AudioDataProcessor(line, listeners);
+                thread = new AudioDataProcessor(line, connectionListeners, dataListeners);
                 thread.start();
             }			
         } catch (LineUnavailableException e) {
-            System.err.println("Could not initialize microphone input");
+            System.err.println("Could not initialize audio input");
             stop();
             e.printStackTrace();
         }
@@ -70,36 +71,41 @@ public class AudioInput {
         return format.getSampleRate() / 2.0;
     }
 
-    public void setMaxFrequency(int maxFrequency) {
-        format = new AudioFormat(maxFrequency * 2f, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
-        if (thread != null && !thread.isStopped()) {
-            start();
-        }
-    }
-
     public void setMixerInfo(Mixer.Info mixerInfo) {
         this.mixerInfo = mixerInfo;
     }
 
-    public void subscribe(AudioListener listener) {
-        if (!listeners.contains(listener)) {
-            listeners.add(listener);
+    public void subscribeConnection(AudioConnectionListener listener) {
+        if (!connectionListeners.contains(listener)) {
+            connectionListeners.add(listener);
         }
     }
 
-    public void unsubscribe(AudioListener listener) {
-        listeners.remove(listener);
+    public void unsubscribeConnection(AudioConnectionListener listener) {
+        connectionListeners.remove(listener);
+    }
+    
+    public void subscribeData(AudioDataListener listener) {
+        if (!dataListeners.contains(listener)) {
+            dataListeners.add(listener);
+        }
+    }
+
+    public void unsubscribeData(AudioDataListener listener) {
+        dataListeners.remove(listener);
     }
 
     private class AudioDataProcessor extends Thread {
         private boolean stopped;
         private boolean closed;
         private TargetDataLine line;
-        private List<AudioListener> listeners;
+        private List<AudioConnectionListener> connectionListeners;
+        private List<AudioDataListener> dataListeners;
 
-        public AudioDataProcessor(TargetDataLine line, List<AudioListener> listeners) {
+        public AudioDataProcessor(TargetDataLine line, List<AudioConnectionListener> connectionlisteners, List<AudioDataListener> datalisteners) {
             this.line = line;
-            this.listeners = listeners;
+            this.connectionListeners = connectionlisteners;
+            this.dataListeners = datalisteners;
             this.closed = false;
         }
 
@@ -110,7 +116,7 @@ public class AudioInput {
             try {
                 line.open(format, 1024);
                 line.start();
-                listeners.stream().forEach(listener -> listener.lineOpened());
+                connectionListeners.stream().forEach(listener -> listener.lineOpened());
                 int bytesRead;
                 byte[] data = new byte[line.getBufferSize()];
                 long temp, t, elapsed;
@@ -118,6 +124,7 @@ public class AudioInput {
                 long lastTime = System.currentTimeMillis();
                 while (!stopped) {
                     bytesRead = line.read(data, 0, data.length);
+                    audioOutput.write(data);
                     t = System.currentTimeMillis();
                     elapsed = lastTime - t;
                     lastTime = t;
@@ -129,13 +136,13 @@ public class AudioInput {
                         sample = sample / Math.pow(2, 15);
                         samples[i] = new RawPoint(sample, lastTime + (bytesRead/2 - i - 1) * elapsed / (bytesRead/2.0));
                     }
-                    listeners.stream().forEach(listener -> listener.readData(samples));
+                    dataListeners.stream().forEach(listener -> listener.readData(samples));
                 }
             } catch (LineUnavailableException e) {
                 System.err.println("Could not initialize microphone input");
                 e.printStackTrace();
             } finally {
-                listeners.stream().forEach(listener -> listener.lineClosed());
+                connectionListeners.stream().forEach(listener -> listener.lineClosed());
                 closed = true;
             }			
         }

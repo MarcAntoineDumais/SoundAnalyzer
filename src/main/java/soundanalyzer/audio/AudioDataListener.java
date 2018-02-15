@@ -2,8 +2,6 @@ package soundanalyzer.audio;
 
 import soundanalyzer.model.RawPoint;
 
-public interface AudioListener {
+public interface AudioDataListener {
     public void readData(RawPoint[] data);
-    public void lineOpened();
-    public void lineClosed();
 }

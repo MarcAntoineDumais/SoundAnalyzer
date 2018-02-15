@@ -1,4 +1,4 @@
-package soundanalyzer.gui;
+package soundanalyzer.gui.graph;
 
 import soundanalyzer.model.RawPoint;
 import soundanalyzer.model.SinWave;

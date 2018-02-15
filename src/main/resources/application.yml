@@ -1,0 +1,8 @@
+audio:
+    format:
+        sample-rate: 16000
+        sample-size-in-bits: 16
+        channels: 1
+        signed: true
+        big-endien: true
+        buffer-size: 1024
