@@ -5,4 +5,4 @@ audio:
         channels: 1
         signed: true
         big-endien: true
-        buffer-size: 1024
+        buffer-size: 2048

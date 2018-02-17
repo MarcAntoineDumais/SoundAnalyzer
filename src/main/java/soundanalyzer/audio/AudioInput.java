@@ -10,47 +10,49 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import soundanalyzer.config.AudioFormatConfig;
 import soundanalyzer.model.RawPoint;
 
 @Service
 public class AudioInput {
     private List<AudioConnectionListener> connectionListeners;
     private List<AudioDataListener> dataListeners;
+    private List<AudioRawDataListener> rawDataListeners;
     private AudioDataProcessor thread;
     private Mixer.Info mixerInfo;
-
+    private AudioFormatConfig formatConfig;
     private AudioFormat format;
-    @Autowired
-    private AudioOutput audioOutput;
-    
-    private static final int SAMPLE_SIZE_IN_BITS = 16;
-    private static final int CHANNELS = 1;
-    private static final boolean SIGNED = true;
-    private static final boolean BIG_ENDIEN = true;
 
-    public AudioInput() {
+    public AudioInput(AudioFormatConfig formatConfig) {
+        this.formatConfig = formatConfig;
+        format = new AudioFormat(formatConfig.getSampleRate(), 
+                formatConfig.getSampleSizeInBits(),
+                formatConfig.getChannels(),
+                formatConfig.isSigned(),
+                formatConfig.isBigEndien());
         connectionListeners = new ArrayList<AudioConnectionListener>();
         dataListeners = new ArrayList<AudioDataListener>();
-        format = new AudioFormat(16000, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
+        rawDataListeners = new ArrayList<AudioRawDataListener>();
     }
 
     public void start() {
         stop();
+        
         DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
         try {
             TargetDataLine line;
             if (mixerInfo == null) {
                 line = (TargetDataLine)AudioSystem.getLine(info);
                 line.close();
-                thread = new AudioDataProcessor(line, connectionListeners, dataListeners);
+                thread = new AudioDataProcessor(line, connectionListeners, dataListeners, rawDataListeners);
                 thread.start();
             } else {
                 Mixer mixer = AudioSystem.getMixer(mixerInfo);
                 line = (TargetDataLine)mixer.getLine(info);
                 line.close();
-                thread = new AudioDataProcessor(line, connectionListeners, dataListeners);
+                thread = new AudioDataProcessor(line, connectionListeners, dataListeners, rawDataListeners);
                 thread.start();
             }			
         } catch (LineUnavailableException e) {
@@ -68,7 +70,7 @@ public class AudioInput {
     }
 
     public double getMaxFrequency() {
-        return format.getSampleRate() / 2.0;
+        return formatConfig.getSampleRate() / 2.0;
     }
 
     public void setMixerInfo(Mixer.Info mixerInfo) {
@@ -94,6 +96,16 @@ public class AudioInput {
     public void unsubscribeData(AudioDataListener listener) {
         dataListeners.remove(listener);
     }
+    
+    public void subscribeRawData(AudioRawDataListener listener) {
+        if (!rawDataListeners.contains(listener)) {
+            rawDataListeners.add(listener);
+        }
+    }
+
+    public void unsubscribeRawData(AudioRawDataListener listener) {
+        rawDataListeners.remove(listener);
+    }
 
     private class AudioDataProcessor extends Thread {
         private boolean stopped;
@@ -101,11 +113,16 @@ public class AudioInput {
         private TargetDataLine line;
         private List<AudioConnectionListener> connectionListeners;
         private List<AudioDataListener> dataListeners;
+        private List<AudioRawDataListener> rawDataListeners;
 
-        public AudioDataProcessor(TargetDataLine line, List<AudioConnectionListener> connectionlisteners, List<AudioDataListener> datalisteners) {
+        public AudioDataProcessor(TargetDataLine line,
+                List<AudioConnectionListener> connectionListeners,
+                List<AudioDataListener> dataListeners,
+                List<AudioRawDataListener> rawDataListeners) {
             this.line = line;
-            this.connectionListeners = connectionlisteners;
-            this.dataListeners = datalisteners;
+            this.connectionListeners = connectionListeners;
+            this.dataListeners = dataListeners;
+            this.rawDataListeners = rawDataListeners;
             this.closed = false;
         }
 
@@ -114,17 +131,17 @@ public class AudioInput {
             stopped = false;
 
             try {
-                line.open(format, 1024);
+                line.open(format, formatConfig.getBufferSize());
                 line.start();
                 connectionListeners.stream().forEach(listener -> listener.lineOpened());
                 int bytesRead;
-                byte[] data = new byte[line.getBufferSize()];
+                byte[] data = new byte[formatConfig.getBufferSize() / 2];
                 long temp, t, elapsed;
                 double sample;
                 long lastTime = System.currentTimeMillis();
                 while (!stopped) {
                     bytesRead = line.read(data, 0, data.length);
-                    audioOutput.write(data);
+                    rawDataListeners.stream().forEach(listener -> listener.readData(data));
                     t = System.currentTimeMillis();
                     elapsed = lastTime - t;
                     lastTime = t;

@@ -2,40 +2,106 @@ package soundanalyzer.gui;
 
 import javax.swing.JPanel;
 
-import soundanalyzer.audio.AudioDataListener;
 import soundanalyzer.audio.AudioInput;
+import soundanalyzer.audio.AudioOutput;
+import soundanalyzer.audio.AudioRawDataListener;
+import soundanalyzer.audio.AudioRecording;
 import soundanalyzer.config.ApplicationContextProvider;
-import soundanalyzer.model.RawPoint;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
-public class PlaybackPanel extends JPanel implements AudioDataListener{
+public class PlaybackPanel extends JPanel implements AudioRawDataListener{
     private static final long serialVersionUID = -1949557262848746731L;
 
+    private JButton btnRecord, btnPlay;
+    private JLabel lblPlaybackState;
+    
+    private enum Status {UNINITIALIZED, RECORDING, PAUSED, PLAYING}
+    
+    private Status status;
+    private AudioRecording recording;
+    
     public PlaybackPanel() {
+        status = Status.UNINITIALIZED;
+        recording = new AudioRecording();
         
-        JButton btnRecord = new JButton("Record");
+        btnRecord = new JButton("Record");
+        btnRecord.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (status == Status.RECORDING) {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            }
+        });
         add(btnRecord);
         
-        JLabel lblPlaybackState = new JLabel("0");
+        lblPlaybackState = new JLabel("0:00");
         add(lblPlaybackState);
         
-        JButton btnPlay = new JButton("Play");
+        btnPlay = new JButton("Play");
+        btnPlay.setEnabled(false);
+        btnPlay.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                AudioOutput audioOutput = ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class);
+                switch (status) {
+                case PAUSED:
+                    //audioOutput.play();
+                    audioOutput.write(recording.getRecording());
+                    System.out.println("finished writing");
+                    status = Status.PLAYING;
+                    btnPlay.setText("Pause");
+                    break;
+                case PLAYING:
+                    //audioOutput.pause();
+                    status = Status.PAUSED;
+                    btnPlay.setText("Play");
+                    break;
+                default:
+                    break;
+                }
+            }
+        });
         add(btnPlay);
 
     }
 
     @Override
-    public void readData(RawPoint[] data) {
-        // TODO Auto-generated method stub
-        
+    public void readData(byte[] data) {
+        if (status == Status.RECORDING) {
+            recording.record(data);
+            lblPlaybackState.setText(recording.getDuration());
+        }
     }
     
     public void connect() {
-        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).subscribeData(this);
+        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).subscribeRawData(this);
     }
     
     public void disconnect() {
-        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).unsubscribeData(this);
+        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).unsubscribeRawData(this);
+    }
+    
+    public void startRecording() {
+        status = Status.RECORDING;
+        recording.reset();
+        connect();
+        btnRecord.setText("Stop");
+        btnPlay.setEnabled(false);
+    }
+    
+    public void stopRecording() {
+        if (status == Status.RECORDING) {
+            disconnect();
+            status = Status.PAUSED;
+            btnRecord.setText("Record");
+            btnPlay.setEnabled(true);
+            btnPlay.setText("Play");
+            recording.saveRecording();
+            //ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class).pause();
+        }
     }
 }

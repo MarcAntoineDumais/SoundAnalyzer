@@ -31,25 +31,6 @@ public class AudioOutput {
         this.mixerInfo = mixerInfo;
     }
     
-    public void connectToSpeakers() {
-        AudioFormat format = new AudioFormat(formatConfig.getSampleRate(), 
-                formatConfig.getSampleSizeInBits(),
-                formatConfig.getChannels(),
-                formatConfig.isSigned(),
-                formatConfig.isBigEndien());
-        
-        DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, format);
-        try {
-            speakers = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
-            speakers.open(format);
-            speakers.start();
-        } catch (LineUnavailableException e) {
-            System.err.println("Could not initialize audio output");
-            stop();
-            e.printStackTrace();
-        }
-    }
-    
     public void start() {
         stop();
         
@@ -90,6 +71,18 @@ public class AudioOutput {
     public void write(byte[] data) {
         if (speakers != null && speakers.isOpen()) {
             speakers.write(data, 0, data.length);
+        }
+    }
+    
+    public void play() {
+        if (speakers != null && speakers.isOpen()) {
+            speakers.stop();
+        }
+    }
+    
+    public void pause() {
+        if (speakers != null && speakers.isOpen()) {
+            speakers.start();
         }
     }
     
