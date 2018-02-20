@@ -1,6 +1,7 @@
 package soundanalyzer.audio;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 
 public class AudioRecording {
     
@@ -21,12 +22,16 @@ public class AudioRecording {
     
     public void saveRecording() {
         if (recording != null) {
-            this.data = recording.toByteArray();
+            data = recording.toByteArray();
         }
     }
     
-    public byte[] getRecording() {
-        return data;
+    public int getDataLength() {
+        return data.length;
+    }
+    
+    public byte[] getData(int remaining) {
+        return Arrays.copyOfRange(data, data.length - remaining, data.length);
     }
     
     public String getDuration() {

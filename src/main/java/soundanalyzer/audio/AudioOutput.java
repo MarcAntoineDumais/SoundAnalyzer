@@ -80,10 +80,15 @@ public class AudioOutput {
         }
     }
     
-    public void pause() {
+    public int pause() {
         if (speakers != null && speakers.isOpen()) {
+            speakers.stop();
+            int remaining = speakers.available();
+            speakers.flush();
             speakers.start();
+            return remaining;
         }
+        return -1;
     }
     
     public void subscribe(AudioConnectionListener listener) {

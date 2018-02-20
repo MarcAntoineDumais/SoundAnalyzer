@@ -15,17 +15,19 @@ import java.awt.event.ActionEvent;
 public class PlaybackPanel extends JPanel implements AudioRawDataListener{
     private static final long serialVersionUID = -1949557262848746731L;
 
-    private JButton btnRecord, btnPlay;
+    private JButton btnRecord, btnPlay, btnReset;
     private JLabel lblPlaybackState;
     
     private enum Status {UNINITIALIZED, RECORDING, PAUSED, PLAYING}
     
     private Status status;
     private AudioRecording recording;
+    private int remaining;
     
     public PlaybackPanel() {
         status = Status.UNINITIALIZED;
         recording = new AudioRecording();
+        remaining = 0;
         
         btnRecord = new JButton("Record");
         btnRecord.addActionListener(new ActionListener() {
@@ -49,14 +51,17 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
                 AudioOutput audioOutput = ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class);
                 switch (status) {
                 case PAUSED:
-                    //audioOutput.play();
-                    audioOutput.write(recording.getRecording());
-                    System.out.println("finished writing");
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            audioOutput.write(recording.getData(remaining));
+                        }
+                    }.start();
                     status = Status.PLAYING;
                     btnPlay.setText("Pause");
                     break;
                 case PLAYING:
-                    //audioOutput.pause();
+                    remaining = audioOutput.pause();
                     status = Status.PAUSED;
                     btnPlay.setText("Play");
                     break;
@@ -66,6 +71,25 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
             }
         });
         add(btnPlay);
+        
+        btnReset = new JButton("Reset");
+        btnReset.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                AudioOutput audioOutput = ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class);
+                switch (status) {
+                case PLAYING:
+                    audioOutput.pause();
+                case PAUSED:
+                    status = Status.PAUSED;
+                    btnPlay.setText("Play");
+                    remaining = recording.getDataLength();
+                    break;
+                default:
+                    break;
+                }
+            }
+        });
+        add(btnReset);
 
     }
 
@@ -91,6 +115,7 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
         connect();
         btnRecord.setText("Stop");
         btnPlay.setEnabled(false);
+        btnReset.setEnabled(false);
     }
     
     public void stopRecording() {
@@ -99,9 +124,10 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
             status = Status.PAUSED;
             btnRecord.setText("Record");
             btnPlay.setEnabled(true);
+            btnReset.setEnabled(true);
             btnPlay.setText("Play");
             recording.saveRecording();
-            //ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class).pause();
+            remaining = recording.getDataLength();
         }
     }
 }
