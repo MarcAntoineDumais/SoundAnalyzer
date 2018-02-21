@@ -2,7 +2,6 @@ package soundanalyzer.gui;
 
 import java.awt.Component;
 import java.awt.Dimension;
-import java.util.Arrays;
 
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -19,7 +18,6 @@ import soundanalyzer.audio.AudioInput;
 import soundanalyzer.config.ApplicationContextProvider;
 import soundanalyzer.gui.graph.FourierGraphPanel;
 import soundanalyzer.gui.graph.RawGraphPanel;
-import soundanalyzer.model.RawPoint;
 
 public class RealTimePanel extends JPanel implements AudioDataListener{
     private static final long serialVersionUID = 2949687444255909471L;
@@ -84,7 +82,7 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         JSlider rawAmplitudeSlider = new JSlider();
         rawAmplitudeSlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
-                double amplitude = Math.pow(10, (rawAmplitudeSlider.getValue() / 100.0 - 0.5) * 4.0);
+                double amplitude = Math.log(rawAmplitudeSlider.getValue() / 100.0 + 1.01) * 50;
                 rawGraphPanel.setAmplitude(amplitude);
             }
         });
@@ -131,11 +129,11 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         });
         frequencySlider.setMinorTickSpacing(50);
         frequencySlider.setPaintLabels(true);
-        frequencySlider.setMajorTickSpacing(1000);
+        frequencySlider.setMajorTickSpacing(500);
         frequencySlider.setSnapToTicks(true);
-        frequencySlider.setMinimum(1000);
-        frequencySlider.setMaximum(8000);
-        frequencySlider.setValue(8000);
+        frequencySlider.setMinimum(500);
+        frequencySlider.setMaximum(4000);
+        frequencySlider.setValue(4000);
         frequencySlider.setOrientation(SwingConstants.VERTICAL);
         frequencySettingsPanel.add(frequencySlider);
 
@@ -172,10 +170,10 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
     }
 
     @Override
-    public void readData(RawPoint[] data) {
+    public void readData(double[] data) {
         analyzerService = ApplicationContextProvider.getApplicationContext().getBean(AnalyzerService.class);
         if (data.length > 0) {
-            rawGraphPanel.addPoints(Arrays.asList(data));
+            rawGraphPanel.addPoints(data);
             fourierGraphPanel.addWaves(analyzerService.fourierTransform(data, false));
         }
     }

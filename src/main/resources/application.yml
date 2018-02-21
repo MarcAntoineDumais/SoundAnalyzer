@@ -1,6 +1,6 @@
 audio:
     format:
-        sample-rate: 16000
+        sample-rate: 8000
         sample-size-in-bits: 16
         channels: 1
         signed: true

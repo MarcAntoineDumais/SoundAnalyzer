@@ -22,12 +22,10 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
     
     private Status status;
     private AudioRecording recording;
-    private int remaining;
     
     public PlaybackPanel() {
         status = Status.UNINITIALIZED;
         recording = new AudioRecording();
-        remaining = 0;
         
         btnRecord = new JButton("Record");
         btnRecord.addActionListener(new ActionListener() {
@@ -51,17 +49,25 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
                 AudioOutput audioOutput = ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class);
                 switch (status) {
                 case PAUSED:
+                    status = Status.PLAYING;
+                    btnPlay.setText("Pause");
                     new Thread() {
                         @Override
                         public void run() {
-                            audioOutput.write(recording.getData(remaining));
+                            while (status == Status.PLAYING) {
+                                byte[] data = recording.getNextPart();
+                                if (data.length > 0) {
+                                    audioOutput.write(data);
+                                } else {
+                                    status = Status.PAUSED;
+                                }
+                            }
+                            
                         }
                     }.start();
-                    status = Status.PLAYING;
-                    btnPlay.setText("Pause");
                     break;
                 case PLAYING:
-                    remaining = audioOutput.pause();
+                    audioOutput.flush();
                     status = Status.PAUSED;
                     btnPlay.setText("Play");
                     break;
@@ -78,11 +84,11 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
                 AudioOutput audioOutput = ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class);
                 switch (status) {
                 case PLAYING:
-                    audioOutput.pause();
+                    audioOutput.flush();
                 case PAUSED:
                     status = Status.PAUSED;
                     btnPlay.setText("Play");
-                    remaining = recording.getDataLength();
+                    recording.saveRecording();
                     break;
                 default:
                     break;
@@ -109,7 +115,7 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
         ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).unsubscribeRawData(this);
     }
     
-    public void startRecording() {
+    private void startRecording() {
         status = Status.RECORDING;
         recording.reset();
         connect();
@@ -118,7 +124,7 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
         btnReset.setEnabled(false);
     }
     
-    public void stopRecording() {
+    private void stopRecording() {
         if (status == Status.RECORDING) {
             disconnect();
             status = Status.PAUSED;
@@ -127,7 +133,6 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
             btnReset.setEnabled(true);
             btnPlay.setText("Play");
             recording.saveRecording();
-            remaining = recording.getDataLength();
         }
     }
 }

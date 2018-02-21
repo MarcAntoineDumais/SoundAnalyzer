@@ -3,10 +3,16 @@ package soundanalyzer.audio;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
+import soundanalyzer.analyzer.AnalyzerService;
+import soundanalyzer.config.ApplicationContextProvider;
+import soundanalyzer.config.AudioFormatConfig;
+
 public class AudioRecording {
     
     private byte[] data;
     private ByteArrayOutputStream recording;
+    private static final int PART_SIZE = 80;
+    private int currentPart = 0;
     
     public AudioRecording() {
         reset();
@@ -30,12 +36,23 @@ public class AudioRecording {
         return data.length;
     }
     
-    public byte[] getData(int remaining) {
+    public byte[] getRemainingData(int remaining) {
         return Arrays.copyOfRange(data, data.length - remaining, data.length);
     }
     
+    public byte[] getData(int start, int end) {
+        return Arrays.copyOfRange(data, start, end);
+    }
+    
+    public byte[] getNextPart() {
+        int start = currentPart * PART_SIZE;
+        currentPart++;
+        return getData(start, Math.max(start + PART_SIZE, data.length));
+    }
+    
     public String getDuration() {
-        int secondsFull = recording.size() / 32000;
+        AudioFormatConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioFormatConfig.class);
+        int secondsFull = recording.size() / (config.getSampleRate() * config.getSampleSizeInBits() / 8);
         String minutes = "" + secondsFull / 60;
         String seconds = "" + secondsFull % 60;
         if (seconds.length() < 2) {

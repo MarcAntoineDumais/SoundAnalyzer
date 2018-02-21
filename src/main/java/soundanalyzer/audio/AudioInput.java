@@ -13,7 +13,6 @@ import javax.sound.sampled.TargetDataLine;
 import org.springframework.stereotype.Service;
 
 import soundanalyzer.config.AudioFormatConfig;
-import soundanalyzer.model.RawPoint;
 
 @Service
 public class AudioInput {
@@ -135,23 +134,19 @@ public class AudioInput {
                 line.start();
                 connectionListeners.stream().forEach(listener -> listener.lineOpened());
                 int bytesRead;
-                byte[] data = new byte[formatConfig.getBufferSize() / 2];
-                long temp, t, elapsed;
+                byte[] data = new byte[formatConfig.getBufferSize() / 4];
+                long temp;
                 double sample;
-                long lastTime = System.currentTimeMillis();
                 while (!stopped) {
                     bytesRead = line.read(data, 0, data.length);
                     rawDataListeners.stream().forEach(listener -> listener.readData(data));
-                    t = System.currentTimeMillis();
-                    elapsed = lastTime - t;
-                    lastTime = t;
-                    RawPoint[] samples = new RawPoint[bytesRead/2];
+                    double[] samples = new double[bytesRead/2];
                     for (int i = 0; i < bytesRead/2; i++) {
                         temp = ((data[2*i] & 0xffL) << 8L) |
                                 (data[2*i + 1] & 0xffL);
                         sample = (temp << 48) >> 48;
                         sample = sample / Math.pow(2, 15);
-                        samples[i] = new RawPoint(sample, lastTime + (bytesRead/2 - i - 1) * elapsed / (bytesRead/2.0));
+                        samples[i] = sample;
                     }
                     dataListeners.stream().forEach(listener -> listener.readData(samples));
                 }

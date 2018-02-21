@@ -33,6 +33,7 @@ public class MainPanel extends JPanel {
         add(tabbedPane, BorderLayout.CENTER);
         
         realTimePanel = new RealTimePanel();
+        realTimePanel.connect();
         tabbedPane.addTab("Real time", null, realTimePanel, null);
         
         playbackPanel = new PlaybackPanel();
