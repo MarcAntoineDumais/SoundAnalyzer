@@ -15,11 +15,15 @@ public class AudioRecording {
     private int currentPart = 0;
     
     public AudioRecording() {
-        reset();
+        eraseRecording();
+    }
+    
+    public void eraseRecording() {
+        recording = new ByteArrayOutputStream();
     }
     
     public void reset() {
-        recording = new ByteArrayOutputStream();
+        currentPart = 0;
     }
     
     public void record(byte[] data) {
@@ -29,6 +33,7 @@ public class AudioRecording {
     public void saveRecording() {
         if (recording != null) {
             data = recording.toByteArray();
+            currentPart = 0;
         }
     }
     
@@ -47,7 +52,7 @@ public class AudioRecording {
     public byte[] getNextPart() {
         int start = currentPart * PART_SIZE;
         currentPart++;
-        return getData(start, Math.max(start + PART_SIZE, data.length));
+        return getData(Math.min(start, data.length), Math.min(start + PART_SIZE, data.length));
     }
     
     public String getDuration() {
@@ -59,5 +64,16 @@ public class AudioRecording {
             seconds = "0" + seconds;
         }
         return minutes + ":" + seconds;
+    }
+    
+    public String getProgress() {
+        AudioFormatConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioFormatConfig.class);
+        int secondsFull = currentPart * PART_SIZE / (config.getSampleRate() * config.getSampleSizeInBits() / 8);
+        String minutes = "" + secondsFull / 60;
+        String seconds = "" + secondsFull % 60;
+        if (seconds.length() < 2) {
+            seconds = "0" + seconds;
+        }
+        return minutes + ":" + seconds + " / " + getDuration();
     }
 }

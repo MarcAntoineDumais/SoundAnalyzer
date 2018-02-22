@@ -18,7 +18,7 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
     private JButton btnRecord, btnPlay, btnReset;
     private JLabel lblPlaybackState;
     
-    private enum Status {UNINITIALIZED, RECORDING, PAUSED, PLAYING}
+    private enum Status {UNINITIALIZED, RECORDING, PAUSED, PLAYING, FINISHED}
     
     private Status status;
     private AudioRecording recording;
@@ -56,10 +56,12 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
                         public void run() {
                             while (status == Status.PLAYING) {
                                 byte[] data = recording.getNextPart();
+                                lblPlaybackState.setText(recording.getProgress());
                                 if (data.length > 0) {
                                     audioOutput.write(data);
                                 } else {
-                                    status = Status.PAUSED;
+                                    status = Status.FINISHED;
+                                    btnPlay.setEnabled(false);
                                 }
                             }
                             
@@ -86,9 +88,12 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
                 case PLAYING:
                     audioOutput.flush();
                 case PAUSED:
+                case FINISHED:
                     status = Status.PAUSED;
                     btnPlay.setText("Play");
-                    recording.saveRecording();
+                    btnPlay.setEnabled(true);
+                    recording.reset();
+                    lblPlaybackState.setText(recording.getProgress());
                     break;
                 default:
                     break;
@@ -117,7 +122,7 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
     
     private void startRecording() {
         status = Status.RECORDING;
-        recording.reset();
+        recording.eraseRecording();
         connect();
         btnRecord.setText("Stop");
         btnPlay.setEnabled(false);
@@ -133,6 +138,7 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
             btnReset.setEnabled(true);
             btnPlay.setText("Play");
             recording.saveRecording();
+            lblPlaybackState.setText(recording.getProgress());
         }
     }
 }
