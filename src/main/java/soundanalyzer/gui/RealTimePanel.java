@@ -165,8 +165,6 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         fourierAmplitudeSlider.setValue(50);
         fourierAmplitudeSlider.setOrientation(SwingConstants.VERTICAL);
         amplitudeSettingsPanel.add(fourierAmplitudeSlider);
-        
-        
     }
 
     @Override
