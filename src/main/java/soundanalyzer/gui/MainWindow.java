@@ -7,9 +7,9 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
+import soundanalyzer.audio.AudioConnectionListener;
 import soundanalyzer.audio.AudioInput;
+import soundanalyzer.audio.AudioOutput;
 import soundanalyzer.config.ApplicationContextProvider;
 
 import javax.swing.JMenuBar;
@@ -23,16 +23,17 @@ import java.awt.event.ActionEvent;
 public class MainWindow extends JFrame {
     private static final long serialVersionUID = -4539965066131036060L;
 
-    @Autowired
     private AudioInput audioInput;
-
+    private AudioOutput audioOutput;
     private MainPanel mainPanel;
     private JMenuItem mntmStartMicrophone, mntmStopInput;
-    private JMenuItem mntmStartSoundcard;
+    private JMenuItem mntmChooseInputDevice;
+    private JMenu mnAudioOutput;
+    private JMenuItem mntmStartSpeakers;
+    private JMenuItem mntmChooseOutputDevice;
+    private JMenuItem mntmStopOutput;
 
     public MainWindow() {
-        audioInput = ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class);
-
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JMenuBar menuBar = new JMenuBar();
@@ -55,8 +56,8 @@ public class MainWindow extends JFrame {
         });
         mnAudioInput.add(mntmStartMicrophone);
 
-        mntmStartSoundcard = new JMenuItem("Use Soundcard");
-        mntmStartSoundcard.addActionListener(new ActionListener() {
+        mntmChooseInputDevice = new JMenuItem("Choose Device");
+        mntmChooseInputDevice.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
                 Mixer.Info result = (Mixer.Info)JOptionPane.showInputDialog(
@@ -77,7 +78,7 @@ public class MainWindow extends JFrame {
                 }.start();
             }
         });
-        mnAudioInput.add(mntmStartSoundcard);
+        mnAudioInput.add(mntmChooseInputDevice);
 
         mntmStopInput = new JMenuItem("Stop Input");
         mntmStopInput.addActionListener(new ActionListener() {
@@ -92,31 +93,105 @@ public class MainWindow extends JFrame {
         });
         mntmStopInput.setEnabled(false);
         mnAudioInput.add(mntmStopInput);
+        
+        mnAudioOutput = new JMenu("Output");
+        menuBar.add(mnAudioOutput);
+        
+        mntmStartSpeakers = new JMenuItem("Use Speakers");
+        mntmStartSpeakers.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                audioOutput.setMixerInfo(null);
+                audioOutput.start();
+            }
+        });
+        mnAudioOutput.add(mntmStartSpeakers);
+        
+        mntmChooseOutputDevice = new JMenuItem("Choose Device");
+        mntmChooseOutputDevice.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
+                Mixer.Info result = (Mixer.Info)JOptionPane.showInputDialog(
+                        null,
+                        "Please select the audio output source:",
+                        "Output Source Selection",
+                        JOptionPane.QUESTION_MESSAGE,
+                        null, mixerInfo, null);
+
+                audioOutput.setMixerInfo(result);
+                audioOutput.start();
+            }
+        });
+        mnAudioOutput.add(mntmChooseOutputDevice);
+        
+        mntmStopOutput = new JMenuItem("Stop Output");
+        mntmStopOutput.setEnabled(false);
+        mntmStopOutput.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                audioOutput.stop();
+            }
+        });
+        mnAudioOutput.add(mntmStopOutput);
 
         JPanel contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(0, 0, 0, 0));
         contentPane.setLayout(new BorderLayout(0, 0));
 
-        mainPanel = new MainPanel(this);
-        audioInput.subscribe(mainPanel);
+        mainPanel = new MainPanel();
         contentPane.add(mainPanel, BorderLayout.CENTER);
         setContentPane(contentPane);
 
         validate();
         pack();
         setLocationRelativeTo(null);
-        mainPanel.recalculatePositions();
+        
+        audioInput = ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class);
+        audioInput.subscribeConnection(new AudioConnectionListener() {
+            @Override
+            public void lineOpened() {
+                inputLineOpened();
+            }
+
+            @Override
+            public void lineClosed() {
+                inputLineClosed();
+            }
+        });
+        
+        audioOutput = ApplicationContextProvider.getApplicationContext().getBean(AudioOutput.class);
+        audioOutput.subscribe(new AudioConnectionListener() {
+            @Override
+            public void lineOpened() {
+                outputLineOpened();
+            }
+
+            @Override
+            public void lineClosed() {
+                outputLineClosed();
+            }
+        });
     }
 
-    public void microphoneLineClosed() {
+    public void inputLineOpened() {
+        mntmStartMicrophone.setEnabled(false);
+        mntmChooseInputDevice.setEnabled(false);
+        mntmStopInput.setEnabled(true);
+    }
+
+    public void inputLineClosed() {
         mntmStartMicrophone.setEnabled(true);
-        mntmStartSoundcard.setEnabled(true);
+        mntmChooseInputDevice.setEnabled(true);
         mntmStopInput.setEnabled(false);
     }
+    
+    public void outputLineOpened() {
+        mntmStartSpeakers.setEnabled(false);
+        mntmChooseOutputDevice.setEnabled(false);
+        mntmStopOutput.setEnabled(true);
+    }
 
-    public void microphoneLineOpened() {
-        mntmStartMicrophone.setEnabled(false);
-        mntmStartSoundcard.setEnabled(false);
-        mntmStopInput.setEnabled(true);
+    public void outputLineClosed() {
+        mntmStartSpeakers.setEnabled(true);
+        mntmChooseOutputDevice.setEnabled(true);
+        mntmStopOutput.setEnabled(false);
     }
 }

@@ -1,4 +1,4 @@
-package soundanalyzer.gui;
+package soundanalyzer.gui.graph;
 
 import java.awt.Dimension;
 import java.awt.Font;
@@ -45,13 +45,14 @@ public class FourierGraphPanel extends JPanel implements Runnable {
         queue = new ConcurrentLinkedQueue<>();
         points = Collections.synchronizedList(new ArrayList<VanishingGraphValue>());
         recalculatePositions();
-
+        
         thread = new Thread(this);
         thread.start();
     }
 
     @Override
     public void paintComponent(Graphics g) {
+        recalculatePositions();
         Graphics2D g2d = (Graphics2D)g;
 
         g2d.setColor(Color.BLACK);
@@ -73,21 +74,6 @@ public class FourierGraphPanel extends JPanel implements Runnable {
                     x - fm.stringWidth(text) / 2,
                     height - 2);
         }
-
-        // Y-axis
-
-        //		g2d.drawLine(xStart, yEnd, xStart, yStart);
-        //		for (int i = 1; i <= 10; i++) {
-        //			int y = yEnd - (int)(i * ySize / 10.0);
-        //			g2d.drawLine(xStart - 1, y, xStart + 1, y);
-        //			
-        //			String text = "" + i;
-        //			g2d.drawString(text,
-        //					xStart - 5 - fm.stringWidth(text),
-        //					y + fm.getHeight() / 2 - 4);
-        //			
-        //		}
-
 
         // Points drawing
         g2d.setColor(Color.CYAN);
@@ -115,7 +101,6 @@ public class FourierGraphPanel extends JPanel implements Runnable {
         yStart = 10;
         yEnd = height - 16;
         ySize = yEnd - yStart;
-        points.clear();
     }
 
     public void setMaxFrequency(int freq) {

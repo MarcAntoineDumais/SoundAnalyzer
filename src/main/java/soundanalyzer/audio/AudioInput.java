@@ -9,51 +9,53 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 
 import org.springframework.stereotype.Service;
-import soundanalyzer.model.RawPoint;
+
+import soundanalyzer.config.AudioFormatConfig;
 
 @Service
 public class AudioInput {
-    private List<AudioListener> listeners;
+    private List<AudioConnectionListener> connectionListeners;
+    private List<AudioDataListener> dataListeners;
+    private List<AudioRawDataListener> rawDataListeners;
     private AudioDataProcessor thread;
     private Mixer.Info mixerInfo;
-
+    private AudioFormatConfig formatConfig;
     private AudioFormat format;
-    private static final int SAMPLE_SIZE_IN_BITS = 16;
-    private static final int CHANNELS = 1;
-    private static final boolean SIGNED = true;
-    private static final boolean BIG_ENDIEN = true;
 
-    public AudioInput() {
-        listeners = new ArrayList<AudioListener>();
-        format = new AudioFormat(16000, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
+    public AudioInput(AudioFormatConfig formatConfig) {
+        this.formatConfig = formatConfig;
+        format = new AudioFormat(formatConfig.getSampleRate(), 
+                formatConfig.getSampleSizeInBits(),
+                formatConfig.getChannels(),
+                formatConfig.isSigned(),
+                formatConfig.isBigEndien());
+        connectionListeners = new ArrayList<AudioConnectionListener>();
+        dataListeners = new ArrayList<AudioDataListener>();
+        rawDataListeners = new ArrayList<AudioRawDataListener>();
     }
 
     public void start() {
         stop();
+        
         DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
         try {
             TargetDataLine line;
             if (mixerInfo == null) {
                 line = (TargetDataLine)AudioSystem.getLine(info);
                 line.close();
-                thread = new AudioDataProcessor(line, listeners);
+                thread = new AudioDataProcessor(line, connectionListeners, dataListeners, rawDataListeners);
                 thread.start();
             } else {
                 Mixer mixer = AudioSystem.getMixer(mixerInfo);
                 line = (TargetDataLine)mixer.getLine(info);
                 line.close();
-                thread = new AudioDataProcessor(line, listeners);
+                thread = new AudioDataProcessor(line, connectionListeners, dataListeners, rawDataListeners);
                 thread.start();
             }			
         } catch (LineUnavailableException e) {
-            System.err.println("Could not initialize microphone input");
+            System.err.println("Could not initialize audio input");
             stop();
             e.printStackTrace();
         }
@@ -67,39 +69,59 @@ public class AudioInput {
     }
 
     public double getMaxFrequency() {
-        return format.getSampleRate() / 2.0;
-    }
-
-    public void setMaxFrequency(int maxFrequency) {
-        format = new AudioFormat(maxFrequency * 2f, SAMPLE_SIZE_IN_BITS, CHANNELS, SIGNED, BIG_ENDIEN);
-        if (thread != null && !thread.isStopped()) {
-            start();
-        }
+        return formatConfig.getSampleRate() / 2.0;
     }
 
     public void setMixerInfo(Mixer.Info mixerInfo) {
         this.mixerInfo = mixerInfo;
     }
 
-    public void subscribe(AudioListener listener) {
-        if (!listeners.contains(listener)) {
-            listeners.add(listener);
+    public void subscribeConnection(AudioConnectionListener listener) {
+        if (!connectionListeners.contains(listener)) {
+            connectionListeners.add(listener);
         }
     }
 
-    public void unsubscribe(AudioListener listener) {
-        listeners.remove(listener);
+    public void unsubscribeConnection(AudioConnectionListener listener) {
+        connectionListeners.remove(listener);
+    }
+    
+    public void subscribeData(AudioDataListener listener) {
+        if (!dataListeners.contains(listener)) {
+            dataListeners.add(listener);
+        }
+    }
+
+    public void unsubscribeData(AudioDataListener listener) {
+        dataListeners.remove(listener);
+    }
+    
+    public void subscribeRawData(AudioRawDataListener listener) {
+        if (!rawDataListeners.contains(listener)) {
+            rawDataListeners.add(listener);
+        }
+    }
+
+    public void unsubscribeRawData(AudioRawDataListener listener) {
+        rawDataListeners.remove(listener);
     }
 
     private class AudioDataProcessor extends Thread {
         private boolean stopped;
         private boolean closed;
         private TargetDataLine line;
-        private List<AudioListener> listeners;
+        private List<AudioConnectionListener> connectionListeners;
+        private List<AudioDataListener> dataListeners;
+        private List<AudioRawDataListener> rawDataListeners;
 
-        public AudioDataProcessor(TargetDataLine line, List<AudioListener> listeners) {
+        public AudioDataProcessor(TargetDataLine line,
+                List<AudioConnectionListener> connectionListeners,
+                List<AudioDataListener> dataListeners,
+                List<AudioRawDataListener> rawDataListeners) {
             this.line = line;
-            this.listeners = listeners;
+            this.connectionListeners = connectionListeners;
+            this.dataListeners = dataListeners;
+            this.rawDataListeners = rawDataListeners;
             this.closed = false;
         }
 
@@ -108,34 +130,31 @@ public class AudioInput {
             stopped = false;
 
             try {
-                line.open(format, 1024);
+                line.open(format, formatConfig.getBufferSize());
                 line.start();
-                listeners.stream().forEach(listener -> listener.lineOpened());
+                connectionListeners.stream().forEach(listener -> listener.lineOpened());
                 int bytesRead;
-                byte[] data = new byte[line.getBufferSize()];
-                long temp, t, elapsed;
+                byte[] data = new byte[formatConfig.getBufferSize() / 4];
+                long temp;
                 double sample;
-                long lastTime = System.currentTimeMillis();
                 while (!stopped) {
                     bytesRead = line.read(data, 0, data.length);
-                    t = System.currentTimeMillis();
-                    elapsed = lastTime - t;
-                    lastTime = t;
-                    RawPoint[] samples = new RawPoint[bytesRead/2];
+                    rawDataListeners.stream().forEach(listener -> listener.readData(data));
+                    double[] samples = new double[bytesRead/2];
                     for (int i = 0; i < bytesRead/2; i++) {
                         temp = ((data[2*i] & 0xffL) << 8L) |
                                 (data[2*i + 1] & 0xffL);
                         sample = (temp << 48) >> 48;
                         sample = sample / Math.pow(2, 15);
-                        samples[i] = new RawPoint(sample, lastTime + (bytesRead/2 - i - 1) * elapsed / (bytesRead/2.0));
+                        samples[i] = sample;
                     }
-                    listeners.stream().forEach(listener -> listener.readData(samples));
+                    dataListeners.stream().forEach(listener -> listener.readData(samples));
                 }
             } catch (LineUnavailableException e) {
                 System.err.println("Could not initialize microphone input");
                 e.printStackTrace();
             } finally {
-                listeners.stream().forEach(listener -> listener.lineClosed());
+                connectionListeners.stream().forEach(listener -> listener.lineClosed());
                 closed = true;
             }			
         }

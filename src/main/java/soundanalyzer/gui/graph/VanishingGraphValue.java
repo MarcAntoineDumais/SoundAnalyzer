@@ -1,4 +1,4 @@
-package soundanalyzer.gui;
+package soundanalyzer.gui.graph;
 
 import java.awt.BasicStroke;
 import java.awt.Color;

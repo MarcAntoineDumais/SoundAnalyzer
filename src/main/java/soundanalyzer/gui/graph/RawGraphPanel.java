@@ -1,37 +1,43 @@
-package soundanalyzer.gui;
+package soundanalyzer.gui.graph;
 
-import soundanalyzer.model.RawPoint;
-import soundanalyzer.model.SinWave;
+import soundanalyzer.config.ApplicationContextProvider;
+import soundanalyzer.config.AudioFormatConfig;
+import soundanalyzer.model.Vector2;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 public class RawGraphPanel extends JPanel implements Runnable {
     private static final long serialVersionUID = -2423272741202713669L;
 
     private final int desiredFPS = 30;
-    private final int pointSize = 4;
 
     private int width, height;
 
     private double amplitude, speed;
+    private double translation;
 
-    private Queue<RawPoint> queue;
-    private List<MovingGraphValue> points;
-
+    private Queue<Double> queue;
+    private List<Vector2> points;
+    
     public RawGraphPanel() {
         speed = 0.4;
-        amplitude = 1.0;
+        amplitude = 8.95;
+        translation = 0;
         setOpaque(true);
         setPreferredSize(new Dimension(400, 200));
 
         queue = new ConcurrentLinkedQueue<>();
-        points = Collections.synchronizedList(new ArrayList<MovingGraphValue>());
+        points = Collections.synchronizedList(new ArrayList<>());
 
         new Thread(this).start();
     }
@@ -53,15 +59,26 @@ public class RawGraphPanel extends JPanel implements Runnable {
 
         // Points drawing
         g2d.setColor(Color.BLUE);
+        g2d.setStroke(new BasicStroke(1));
+        AffineTransform transform = g2d.getTransform();
+        g2d.translate(-translation, 0);
+        GeneralPath path = new GeneralPath();
         synchronized(points) {
-            for (MovingGraphValue p : points) {
-                p.draw(g2d);
+            for (int i = 0; i < points.size(); i++) {
+                Vector2 point = points.get(i);
+                if (i == 0) {
+                    path.moveTo(point.x, point.y);
+                } else {
+                    path.lineTo(point.x, point.y);
+                }
             }
         }
+        g2d.draw(path);
+        g2d.setTransform(transform);
     }
 
-    public void addPoints(List<RawPoint> points) {
-        queue.addAll(points);
+    public void addPoints(double[] points) {
+        queue.addAll(Arrays.stream(points).boxed().collect(Collectors.toList()));
     }
 
     public void setSpeed(double speed) {
@@ -74,30 +91,25 @@ public class RawGraphPanel extends JPanel implements Runnable {
 
     @Override
     public void run() {
+        AudioFormatConfig formatConfig = ApplicationContextProvider.getApplicationContext().getBean(AudioFormatConfig.class);
+        double sampleSeparation = 1000.0 / formatConfig.getSampleRate();
         long t = System.currentTimeMillis();
         long sleepTime = 1000 / desiredFPS;
         while (true) {
             long newT = System.currentTimeMillis();
             long elapsed = newT - t;
             t = newT;
-
+            translation += elapsed * speed;
             synchronized(points) {
-                for (MovingGraphValue p : points) {
-                    p.update(elapsed * speed);
-                }
-
-                points.removeIf(MovingGraphValue::isDead);
+                points.removeIf(p -> p.x < translation);
             }
 
             int newPoints = queue.size();
             for (int i = 0; i < newPoints; i++) {
-                RawPoint p = queue.poll();
-                p.value *= amplitude;
-
-                points.add(new MovingGraphValue(
-                        width - ((t - p.time) * speed),
-                        height/2 - (int)(p.value * height/2.0),
-                        pointSize));
+                double d = queue.poll();
+                d *= amplitude;
+                points.add(new Vector2(width - ((newPoints - i - 1) * sampleSeparation * speed) + translation,
+                                       height/2.0 - (d * height/2.0)));
             }
 
             SwingUtilities.invokeLater(() -> repaint());
