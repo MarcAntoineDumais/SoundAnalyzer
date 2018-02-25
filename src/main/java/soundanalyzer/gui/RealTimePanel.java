@@ -2,6 +2,9 @@ package soundanalyzer.gui;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -11,6 +14,8 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import soundanalyzer.analyzer.AnalyzerService;
 import soundanalyzer.audio.AudioDataListener;
@@ -25,7 +30,10 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
     private AnalyzerService analyzerService;
     private RawGraphPanel rawGraphPanel;
     private FourierGraphPanel fourierGraphPanel;
-
+    
+    private Queue<Double> pointsToAnalyze;
+    private static final int POINTS_PER_STEP = 1024;
+    
     public RealTimePanel() {
         setBorder(new EmptyBorder(0, 0, 0, 0));
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -165,14 +173,42 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         fourierAmplitudeSlider.setValue(50);
         fourierAmplitudeSlider.setOrientation(SwingConstants.VERTICAL);
         amplitudeSettingsPanel.add(fourierAmplitudeSlider);
+        
+        pointsToAnalyze = new CircularFifoQueue<>(POINTS_PER_STEP);
+        
+        new Thread() {
+            @Override
+            public void run() {
+                while (true) {
+                    synchronized(pointsToAnalyze) {
+                        double[] points = new double[POINTS_PER_STEP];
+                        Object[] toAnalyze = pointsToAnalyze.toArray();
+                        if (toAnalyze.length >= POINTS_PER_STEP) {
+                            for (int i = 0; i < POINTS_PER_STEP; i++) {
+                                points[i] = (double)toAnalyze[i];
+                            }
+                            fourierGraphPanel.addWaves(analyzerService.fourierTransform(points, false));
+                        }
+                    }
+                    try {
+                        Thread.sleep(20);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }.start();
     }
 
     @Override
     public void readData(double[] data) {
         analyzerService = ApplicationContextProvider.getApplicationContext().getBean(AnalyzerService.class);
         if (data.length > 0) {
+            for (double d :  data) {
+                pointsToAnalyze.add(d);
+            }
+            
             rawGraphPanel.addPoints(data);
-            fourierGraphPanel.addWaves(analyzerService.fourierTransform(data, false));
         }
     }
     
