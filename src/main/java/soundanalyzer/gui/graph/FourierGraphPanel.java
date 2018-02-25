@@ -24,7 +24,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 
     private final int desiredFPS = 30;
     private final int pointSize = 4;
-    private final int pointDuration = 400;
+    private final int pointDuration = 50;
 
     private int width, xStart, xEnd, xSize,
     height, yStart, yEnd, ySize,
