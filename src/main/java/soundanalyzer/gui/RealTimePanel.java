@@ -2,9 +2,7 @@ package soundanalyzer.gui;
 
 import java.awt.Component;
 import java.awt.Dimension;
-import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
