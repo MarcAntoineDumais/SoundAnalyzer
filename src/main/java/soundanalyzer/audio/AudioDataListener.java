@@ -1,5 +1,5 @@
 package soundanalyzer.audio;
 
 public interface AudioDataListener {
-    public void readData(double[] data);
+    public void readData(byte[] data);
 }

@@ -16,7 +16,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
-public class RawGraphPanel extends JPanel implements Runnable {
+public class RawGraph extends JPanel implements Runnable {
     private static final long serialVersionUID = -2423272741202713669L;
 
     private final int desiredFPS = 30;
@@ -29,7 +29,7 @@ public class RawGraphPanel extends JPanel implements Runnable {
     private Queue<Double> queue;
     private List<Vector2> points;
     
-    public RawGraphPanel() {
+    public RawGraph() {
         speed = 0.4;
         amplitude = 8.95;
         translation = 0;
