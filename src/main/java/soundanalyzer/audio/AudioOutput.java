@@ -12,18 +12,18 @@ import javax.sound.sampled.SourceDataLine;
 
 import org.springframework.stereotype.Service;
 
-import soundanalyzer.config.AudioFormatConfig;
+import soundanalyzer.config.AudioConfig;
 
 @Service
 public class AudioOutput {
     
     private List<AudioConnectionListener> connectionListeners;
-    private AudioFormatConfig formatConfig;
+    private AudioConfig config;
     private Mixer.Info mixerInfo;
     private SourceDataLine speakers;
     
-    public AudioOutput(AudioFormatConfig formatConfig) {
-        this.formatConfig = formatConfig;
+    public AudioOutput(AudioConfig config) {
+        this.config = config;
         connectionListeners = new ArrayList<AudioConnectionListener>();
     }
     
@@ -34,11 +34,11 @@ public class AudioOutput {
     public void start() {
         stop();
         
-        AudioFormat format = new AudioFormat(formatConfig.getSampleRate(), 
-                formatConfig.getSampleSizeInBits(),
-                formatConfig.getChannels(),
-                formatConfig.isSigned(),
-                formatConfig.isBigEndien());
+        AudioFormat format = new AudioFormat(config.getFormat().getSampleRate(), 
+                config.getFormat().getSampleSizeInBits(),
+                config.getFormat().getChannels(),
+                config.getFormat().isSigned(),
+                config.getFormat().isBigEndien());
         DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, format);
         
         try {

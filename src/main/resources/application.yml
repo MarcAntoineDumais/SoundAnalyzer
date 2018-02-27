@@ -6,3 +6,7 @@ audio:
         signed: true
         big-endien: true
         buffer-size: 2048
+    processing:
+        frame-length: 25
+        frame-step: 10
+        pre-emphasis: 0.97

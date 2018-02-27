@@ -1,7 +1,7 @@
 package soundanalyzer.gui.graph;
 
 import soundanalyzer.config.ApplicationContextProvider;
-import soundanalyzer.config.AudioFormatConfig;
+import soundanalyzer.config.AudioConfig;
 import soundanalyzer.model.Vector2;
 
 import javax.swing.*;
@@ -91,8 +91,8 @@ public class RawGraph extends JPanel implements Runnable {
 
     @Override
     public void run() {
-        AudioFormatConfig formatConfig = ApplicationContextProvider.getApplicationContext().getBean(AudioFormatConfig.class);
-        double sampleSeparation = 1000.0 / formatConfig.getSampleRate();
+        AudioConfig formatConfig = ApplicationContextProvider.getApplicationContext().getBean(AudioConfig.class);
+        double sampleSeparation = 1000.0 / formatConfig.getFormat().getSampleRate();
         long t = System.currentTimeMillis();
         long sleepTime = 1000 / desiredFPS;
         while (true) {

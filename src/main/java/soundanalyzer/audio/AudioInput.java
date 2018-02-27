@@ -12,7 +12,7 @@ import javax.sound.sampled.TargetDataLine;
 
 import org.springframework.stereotype.Service;
 
-import soundanalyzer.config.AudioFormatConfig;
+import soundanalyzer.config.AudioConfig;
 
 @Service
 public class AudioInput {
@@ -20,16 +20,16 @@ public class AudioInput {
     private List<AudioDataListener> dataListeners;
     private AudioDataProcessor thread;
     private Mixer.Info mixerInfo;
-    private AudioFormatConfig formatConfig;
+    private AudioConfig config;
     private AudioFormat format;
 
-    public AudioInput(AudioFormatConfig formatConfig) {
-        this.formatConfig = formatConfig;
-        format = new AudioFormat(formatConfig.getSampleRate(), 
-                formatConfig.getSampleSizeInBits(),
-                formatConfig.getChannels(),
-                formatConfig.isSigned(),
-                formatConfig.isBigEndien());
+    public AudioInput(AudioConfig config) {
+        this.config = config;
+        format = new AudioFormat(config.getFormat().getSampleRate(), 
+                config.getFormat().getSampleSizeInBits(),
+                config.getFormat().getChannels(),
+                config.getFormat().isSigned(),
+                config.getFormat().isBigEndien());
         connectionListeners = new ArrayList<AudioConnectionListener>();
         dataListeners = new ArrayList<AudioDataListener>();
     }
@@ -67,7 +67,7 @@ public class AudioInput {
     }
 
     public double getMaxFrequency() {
-        return formatConfig.getSampleRate() / 2.0;
+        return config.getFormat().getSampleRate() / 2.0;
     }
 
     public void setMixerInfo(Mixer.Info mixerInfo) {
@@ -115,10 +115,10 @@ public class AudioInput {
             stopped = false;
 
             try {
-                line.open(format, formatConfig.getBufferSize());
+                line.open(format, config.getFormat().getBufferSize());
                 line.start();
                 connectionListeners.stream().forEach(listener -> listener.lineOpened());
-                byte[] data = new byte[formatConfig.getBufferSize() / 4];
+                byte[] data = new byte[config.getFormat().getBufferSize() / 4];
                 while (!stopped) {
                     line.read(data, 0, data.length);
                     dataListeners.stream().forEach(listener -> listener.readData(data));

@@ -2,7 +2,12 @@ package soundanalyzer.gui.graph;
 
 import soundanalyzer.analyzer.AnalyzerService;
 import soundanalyzer.analyzer.FormatConverter;
+import soundanalyzer.analyzer.FramingService;
 import soundanalyzer.config.ApplicationContextProvider;
+import soundanalyzer.config.AudioConfig;
+import soundanalyzer.model.SinWave;
+
+import java.util.List;
 
 import javax.swing.*;
 import java.awt.*;
@@ -58,7 +63,7 @@ public class DataGraph extends JPanel {
             int maxHeight = data[0].length;
             int yStep = maxHeight / 10;
             for (int val = yStep; val <= maxHeight; val += yStep) {
-                int y = yStart + val * ySize / maxHeight;
+                int y = yEnd + yStep - val * ySize / maxHeight;
                 g2d.drawLine(xStart - 1, y, xStart + 1, y);
                 String text = "" + val;
                 g2d.drawString(text,
@@ -69,25 +74,42 @@ public class DataGraph extends JPanel {
 
         // Points drawing
         if (data.length > 0) {
-            int pWidth = xSize / data[0].length;
-            int pHeight = ySize / data.length;
+            int pWidth = xSize / data.length;
+            int pHeight = ySize / data[0].length;
             for (int i = 0; i < data.length; i++) {
                 for (int j = 0; j < data[0].length; j++) {
-                    g2d.setColor(Color.CYAN);
-
-                    g2d.fillRect(xStart + pWidth * j, yEnd - pHeight * i, pWidth, pHeight);
+                    g2d.setColor(ColorPalettes.viridis(data[i][j]));
+                    g2d.fillRect(xStart + pWidth * i, yEnd - pHeight * j, pWidth, pHeight);
                 }
             }
         }
     }
 
-    public void loadData(byte[] data) {
+    public void loadData(byte[] rawData) {
         FormatConverter formatConverter = ApplicationContextProvider.getApplicationContext().getBean(FormatConverter.class);
         AnalyzerService analyzerService = ApplicationContextProvider.getApplicationContext().getBean(AnalyzerService.class);
-
-        double[] samples = formatConverter.rawToSamples(data);
-
-
+        FramingService framingService = ApplicationContextProvider.getApplicationContext().getBean(FramingService.class);
+        AudioConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioConfig.class);
+        
+        double[] samples = formatConverter.rawToSamples(rawData);
+        double[] preEmphasis = samples.clone();
+        for (int i = 1; i < preEmphasis.length; i++) {
+            preEmphasis[i] -= config.getProcessing().getPreEmphasis() * samples[i - 1];
+        }
+        
+        double[][] frameData = framingService.samplesToFrames(preEmphasis);
+        if (frameData.length > 0) {
+            List<SinWave> freqs = analyzerService.fourierTransform(frameData[0], false);
+            data = new double[frameData.length][freqs.size()];
+            
+            for (int i = 0; i < data.length; i++) {
+                freqs = analyzerService.fourierTransform(frameData[i], false);
+                for (int j = 0; j < data[0].length; j++) {
+                    data[i][j] = freqs.get(j).amplitude;
+                }
+            }
+        }
+        
         repaint();
     }
 

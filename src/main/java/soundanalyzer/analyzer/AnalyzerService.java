@@ -25,13 +25,11 @@ public class AnalyzerService {
         double[] processed = new double[length];
         System.arraycopy(samples, 0, processed, 0, length);
 
-        //long t = System.nanoTime();
         if (homemade) {
             calculateFourier(processed);
         } else {
             fft.realForward(processed);
         }
-        //System.out.println("homemade " + homemade + " " + (System.nanoTime() - t) / 1000000.0 + "ms");
 
         ArrayList<SinWave> results = new ArrayList<SinWave>();
         for (int i = 1; i < halfLength; i++) {
