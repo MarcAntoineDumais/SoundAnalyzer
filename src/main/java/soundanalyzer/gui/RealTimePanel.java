@@ -16,18 +16,20 @@ import javax.swing.event.ChangeListener;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import soundanalyzer.analyzer.AnalyzerService;
+import soundanalyzer.analyzer.FormatConverter;
 import soundanalyzer.audio.AudioDataListener;
 import soundanalyzer.audio.AudioInput;
 import soundanalyzer.config.ApplicationContextProvider;
-import soundanalyzer.gui.graph.FourierGraphPanel;
-import soundanalyzer.gui.graph.RawGraphPanel;
+import soundanalyzer.gui.graph.FourierGraph;
+import soundanalyzer.gui.graph.RawGraph;
 
 public class RealTimePanel extends JPanel implements AudioDataListener{
     private static final long serialVersionUID = 2949687444255909471L;
 
     private AnalyzerService analyzerService;
-    private RawGraphPanel rawGraphPanel;
-    private FourierGraphPanel fourierGraphPanel;
+    private FormatConverter formatConverter;
+    private RawGraph rawGraph;
+    private FourierGraph fourierGraph;
     
     private Queue<Double> pointsToAnalyze;
     private static final int POINTS_PER_STEP = 1024;
@@ -40,10 +42,10 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         rawPanel.setLayout(new BoxLayout(rawPanel, BoxLayout.X_AXIS));
         add(rawPanel);
 
-        rawGraphPanel = new RawGraphPanel();
-        rawGraphPanel.setMinimumSize(new Dimension(400, 200));
-        rawGraphPanel.setMaximumSize(new Dimension(400, 200));
-        rawPanel.add(rawGraphPanel);
+        rawGraph = new RawGraph();
+        rawGraph.setMinimumSize(new Dimension(400, 200));
+        rawGraph.setMaximumSize(new Dimension(400, 200));
+        rawPanel.add(rawGraph);
 
         JPanel spacerPanel = new JPanel();
         spacerPanel.setPreferredSize(new Dimension(10, spacerPanel.getHeight()));
@@ -60,7 +62,7 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         JSlider speedSlider = new JSlider();
         speedSlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
-                rawGraphPanel.setSpeed(speedSlider.getValue() / 20.0);
+                rawGraph.setSpeed(speedSlider.getValue() / 20.0);
             }
         });
         speedSlider.setMinorTickSpacing(1);
@@ -89,7 +91,7 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         rawAmplitudeSlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
                 double amplitude = Math.log(rawAmplitudeSlider.getValue() / 100.0 + 1.01) * 50;
-                rawGraphPanel.setAmplitude(amplitude);
+                rawGraph.setAmplitude(amplitude);
             }
         });
         rawAmplitudeSlider.setMinorTickSpacing(1);
@@ -110,10 +112,10 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         fourierPanel.setLayout(new BoxLayout(fourierPanel, BoxLayout.X_AXIS));
         add(fourierPanel);
 
-        fourierGraphPanel = new FourierGraphPanel();
-        fourierGraphPanel.setMinimumSize(new Dimension(400, 200));
-        fourierGraphPanel.setMaximumSize(new Dimension(400, 200));
-        fourierPanel.add(fourierGraphPanel);
+        fourierGraph = new FourierGraph();
+        fourierGraph.setMinimumSize(new Dimension(400, 200));
+        fourierGraph.setMaximumSize(new Dimension(400, 200));
+        fourierPanel.add(fourierGraph);
 
         JPanel spacerPanel3 = new JPanel();
         spacerPanel3.setPreferredSize(new Dimension(10, spacerPanel3.getHeight()));
@@ -130,7 +132,7 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         JSlider frequencySlider = new JSlider();
         frequencySlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
-                fourierGraphPanel.setMaxFrequency(frequencySlider.getValue());
+                fourierGraph.setMaxFrequency(frequencySlider.getValue());
             }
         });
         frequencySlider.setMinorTickSpacing(50);
@@ -159,7 +161,7 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
         fourierAmplitudeSlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
                 double amplitude = Math.pow(10, (fourierAmplitudeSlider.getValue() / 100.0 - 0.5) * 4.0);
-                fourierGraphPanel.setAmplitude(amplitude);
+                fourierGraph.setAmplitude(amplitude);
             }
         });
         fourierAmplitudeSlider.setMinorTickSpacing(1);
@@ -185,7 +187,7 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
                             for (int i = 0; i < POINTS_PER_STEP; i++) {
                                 points[i] = (double)toAnalyze[i];
                             }
-                            fourierGraphPanel.addWaves(analyzerService.fourierTransform(points, false));
+                            fourierGraph.addWaves(analyzerService.fourierTransform(points, false));
                         }
                     }
                     try {
@@ -199,14 +201,16 @@ public class RealTimePanel extends JPanel implements AudioDataListener{
     }
 
     @Override
-    public void readData(double[] data) {
+    public void readData(byte[] data) {
         analyzerService = ApplicationContextProvider.getApplicationContext().getBean(AnalyzerService.class);
-        if (data.length > 0) {
-            for (double d :  data) {
+        formatConverter = ApplicationContextProvider.getApplicationContext().getBean(FormatConverter.class);
+        double[] samples = formatConverter.rawToSamples(data);
+        if (samples.length > 0) {
+            for (double d :  samples) {
                 pointsToAnalyze.add(d);
             }
             
-            rawGraphPanel.addPoints(data);
+            rawGraph.addPoints(samples);
         }
     }
     

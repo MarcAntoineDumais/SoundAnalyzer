@@ -19,7 +19,7 @@ import soundanalyzer.model.SinWave;
 import java.awt.BasicStroke;
 import java.awt.Color;
 
-public class FourierGraphPanel extends JPanel implements Runnable {
+public class FourierGraph extends JPanel implements Runnable {
     private static final long serialVersionUID = -2423472748202716661L;
 
     private final int desiredFPS = 30;
@@ -33,9 +33,8 @@ public class FourierGraphPanel extends JPanel implements Runnable {
 
     private Queue<SinWave> queue;
     private List<VanishingGraphValue> points;
-    private Thread thread;
 
-    public FourierGraphPanel() {
+    public FourierGraph() {
         maxFrequency = 500;
         xStep = maxFrequency / 10;
         amplitude = 1.0;
@@ -46,8 +45,7 @@ public class FourierGraphPanel extends JPanel implements Runnable {
         points = Collections.synchronizedList(new ArrayList<VanishingGraphValue>());
         recalculatePositions();
         
-        thread = new Thread(this);
-        thread.start();
+        new Thread(this).start();
     }
 
     @Override

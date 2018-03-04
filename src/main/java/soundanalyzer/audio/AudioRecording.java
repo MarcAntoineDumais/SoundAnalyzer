@@ -3,9 +3,8 @@ package soundanalyzer.audio;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
-import soundanalyzer.analyzer.AnalyzerService;
 import soundanalyzer.config.ApplicationContextProvider;
-import soundanalyzer.config.AudioFormatConfig;
+import soundanalyzer.config.AudioConfig;
 
 public class AudioRecording {
     
@@ -56,8 +55,8 @@ public class AudioRecording {
     }
     
     public String getDuration() {
-        AudioFormatConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioFormatConfig.class);
-        int secondsFull = recording.size() / (config.getSampleRate() * config.getSampleSizeInBits() / 8);
+        AudioConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioConfig.class);
+        int secondsFull = recording.size() / (config.getFormat().getSampleRate() * config.getFormat().getSampleSizeInBits() / 8);
         String minutes = "" + secondsFull / 60;
         String seconds = "" + secondsFull % 60;
         if (seconds.length() < 2) {
@@ -67,8 +66,8 @@ public class AudioRecording {
     }
     
     public String getProgress() {
-        AudioFormatConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioFormatConfig.class);
-        int secondsFull = currentPart * PART_SIZE / (config.getSampleRate() * config.getSampleSizeInBits() / 8);
+        AudioConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioConfig.class);
+        int secondsFull = currentPart * PART_SIZE / (config.getFormat().getSampleRate() * config.getFormat().getSampleSizeInBits() / 8);
         String minutes = "" + secondsFull / 60;
         String seconds = "" + secondsFull % 60;
         if (seconds.length() < 2) {

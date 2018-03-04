@@ -2,21 +2,24 @@ package soundanalyzer.gui;
 
 import javax.swing.JPanel;
 
+import soundanalyzer.audio.AudioDataListener;
 import soundanalyzer.audio.AudioInput;
 import soundanalyzer.audio.AudioOutput;
-import soundanalyzer.audio.AudioRawDataListener;
 import soundanalyzer.audio.AudioRecording;
 import soundanalyzer.config.ApplicationContextProvider;
+import soundanalyzer.gui.graph.DataGraph;
+
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-public class PlaybackPanel extends JPanel implements AudioRawDataListener{
+public class PlaybackPanel extends JPanel implements AudioDataListener {
     private static final long serialVersionUID = -1949557262848746731L;
 
     private JButton btnRecord, btnPlay, btnReset;
     private JLabel lblPlaybackState;
+    private DataGraph dataGraph;
     
     private enum Status {UNINITIALIZED, RECORDING, PAUSED, PLAYING, FINISHED}
     
@@ -102,6 +105,8 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
         });
         add(btnReset);
 
+        dataGraph = new DataGraph();
+        add(dataGraph);
     }
 
     @Override
@@ -113,11 +118,11 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
     }
     
     public void connect() {
-        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).subscribeRawData(this);
+        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).subscribeData(this);
     }
     
     public void disconnect() {
-        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).unsubscribeRawData(this);
+        ApplicationContextProvider.getApplicationContext().getBean(AudioInput.class).unsubscribeData(this);
     }
     
     private void startRecording() {
@@ -139,6 +144,8 @@ public class PlaybackPanel extends JPanel implements AudioRawDataListener{
             btnPlay.setText("Play");
             recording.saveRecording();
             lblPlaybackState.setText(recording.getProgress());
+
+            dataGraph.loadData(recording.getData(0, recording.getDataLength()));
         }
     }
 }
