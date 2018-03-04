@@ -7,12 +7,10 @@ import soundanalyzer.config.ApplicationContextProvider;
 import soundanalyzer.config.AudioConfig;
 import soundanalyzer.model.SinWave;
 
-import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.stream.Collectors;
 
 public class DataGraph extends JPanel {
     private static final long serialVersionUID = -2426472248202716611L;
@@ -52,24 +50,25 @@ public class DataGraph extends JPanel {
         AnalyzerService analyzerService = ApplicationContextProvider.getApplicationContext().getBean(AnalyzerService.class);
         FramingService framingService = ApplicationContextProvider.getApplicationContext().getBean(FramingService.class);
         AudioConfig config = ApplicationContextProvider.getApplicationContext().getBean(AudioConfig.class);
-        
+
         double[] samples = formatConverter.rawToSamples(rawData);
         double[] preEmphasis = samples.clone();
+
         for (int i = 1; i < preEmphasis.length; i++) {
             preEmphasis[i] -= config.getProcessing().getPreEmphasis() * samples[i - 1];
         }
-        
+
         double[][] frameData = framingService.samplesToFrames(preEmphasis);
         if (frameData.length > 0) {
             List<SinWave> freqs = analyzerService.fourierTransform(frameData[0], false);
             data = new double[frameData.length][freqs.size()];
-            
+
             for (int i = 0; i < data.length; i++) {
                 freqs = analyzerService.fourierTransform(frameData[i], false);
                 for (int j = 0; j < data[0].length; j++) {
                     data[i][j] = freqs.get(j).amplitude;
                     if (data[i][j] > 0) {
-                        data[i][j] = Math.log(data[i][j]);
+                        data[i][j] = Math.log(data[i][j] + 1);
                     }
                 }
             }
